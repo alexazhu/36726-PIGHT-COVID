@@ -49,7 +49,7 @@ prop_opendate <- district_policies%>%
   summarise(n_opendate = sum(district_enroll))%>% # number of students under certain date for each county
   mutate(prop_opendate = round(n_opendate/county_enroll,2))%>% # proportion
   group_by(county)%>%
-  filter(prop_opendate>0.6)%>% # filter large proportions of students with same reopen dates
+  filter(prop_opendate>0.6)%>% # filter large proportions of students with same reopen dates #can be replaced with # slice(which.max(prop_opendate))#
   mutate(threeweeks_before = opendategrouped-21,sixweeks_later = as.Date('2020-12-15')+42)%>%
   select(-n_opendate)
 ```
@@ -75,7 +75,7 @@ opendate_cases <- cases%>%
 
 # select the start date and end date data for each window of time
   
-start_end_window_counties21 <- counties21%>%
+start_end_window <- opendate_cases%>%
   group_by(COUNTY,window_id)%>%
   arrange(DATE)%>%
   filter(row_number()==1 | row_number()==n())%>%
@@ -87,10 +87,10 @@ start_end_window_counties21 <- counties21%>%
 ```
 
 ```{r}
-counties21%>%
+opendate_cases%>%
   ggplot(aes(x=DATE,y=death_prop,group=COUNTY,color=window_id))+geom_point()+facet_wrap(~major_teaching)+theme(legend.position = 'bottom')
 
-counties21%>%
+opendate_cases%>%
   filter(major_teaching=='Hybrid')%>%
   ggplot(aes(x=DATE,y=death_prop,group=COUNTY,color=window_id))+geom_line(size=2)+facet_wrap(~major_teaching+COUNTY)+theme(legend.position = 'bottom')+geom_line()
 ```
