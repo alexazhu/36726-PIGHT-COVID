@@ -1,0 +1,109 @@
+---
+title: "step7 confound"
+author: "Ziyan Zhu"
+date: "3/23/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+source("step2_data_wrangle.R")
+```
+
+```{r}
+################### school reopen dates ################### 
+shutdown_reopen <- OH_K12 %>%
+  distinct(county,county_enroll,leaid,district_enroll,schooltemporaryshutdown,opendategrouped,teachingmethod)
+
+table(shutdown_reopen[,c('teachingmethod','schooltemporaryshutdown')])
+#table(shutdown_reopen[,c('county','opendategrouped')])
+```
+
+Most of the time:
+
+Hybrid schools -- Never closed;
+
+On Premises schools -- Never closed;
+
+Online Only schools -- Never closed.
+
+```{r}
+shutdown_reopen%>%
+  group_by(county,county_enroll,opendategrouped)%>%
+  summarise(n_opendate = sum(district_enroll))%>%
+  mutate(prop_opendate = round(n_opendate/county_enroll,2))%>%
+  arrange(-prop_opendate)
+```
+
+```{r}
+high_prop <- shutdown_reopen%>%
+  filter(!schooltemporaryshutdown %in% c('Closed indefinitely','Pending','Unknown'))%>%
+  group_by(county,county_enroll,opendategrouped)%>%
+  summarise(n_opendate = sum(district_enroll))%>%
+  mutate(prop_opendate = round(n_opendate/county_enroll,2))%>%
+  group_by(county)%>%
+  filter(prop_opendate>0.6)%>%
+  mutate(threeweeks_before = opendategrouped-21,sixweeks_later = as.Date('2020-12-15')+42)%>%
+  select(-n_opendate)
+```
+
+```{r}
+counties21 <- cases%>%
+  inner_join(high_prop,by=c('COUNTY'='county'))%>%
+  group_by(COUNTY)%>%
+  filter(DATE>=threeweeks_before & DATE<=sixweeks_later)%>%
+  group_by(COUNTY)%>%
+  mutate(window_id = case_when(DATE<opendategrouped~"3 weeks before reopen",
+    DATE>=opendategrouped & DATE<'2020-12-15' ~'fall semester',
+    DATE>='2020-12-15' & DATE< as.Date('2020-12-15')+21 ~ '3 weeks after end',
+    DATE>=as.Date('2020-12-15')+21 ~ '6 weeks after end'
+  ))%>%
+  select(-STATE,-STUSAB,-ST_LAT,-ST_LONG,-STATEFP,-GNISID,-UID,-CODE3)%>%
+  mutate(death_prop = round(CUMDEATHS/POPULATION,5),window_id = as.factor(window_id))%>%
+  left_join(wide_teaching_enroll,by=c('COUNTY'='county','county_enroll'))
+
+
+# select the start date and end date data for each window of time
+  
+start_end_window_counties21 <- counties21%>%
+  group_by(COUNTY,window_id)%>%
+  arrange(DATE)%>%
+  filter(row_number()==1 | row_number()==n())%>%
+  arrange(COUNTY,DATE)%>%
+  group_by(COUNTY,window_id)%>%
+  mutate(y_labels = ifelse(row_number()==1,'y0','y1'))%>%
+  dcast(COUNTY+POPULATION+county_enroll+opendategrouped+threeweeks_before+sixweeks_later+Online_Only+Hybrid+On_Premises+window_id~y_labels,value.var = 'CUMDEATHS')
+
+```
+
+```{r}
+counties21%>%
+  ggplot(aes(x=DATE,y=death_prop,group=COUNTY,color=window_id))+geom_point()+facet_wrap(~major_teaching)+theme(legend.position = 'bottom')
+
+counties21%>%
+  filter(major_teaching=='Hybrid')%>%
+  ggplot(aes(x=DATE,y=death_prop,group=COUNTY,color=window_id))+geom_line(size=2)+facet_wrap(~major_teaching+COUNTY)+theme(legend.position = 'bottom')+geom_line()
+```
+
+
+
+--- down here is just for experiment -- split the fall semester by 21days window
+
+```{r}
+long_21d_y <- counties21%>%
+  filter(DATE >= threeweeks_before,DATE <= sixweeks_later)%>%
+  group_by(COUNTY)%>%
+  filter(DATE == opendategrouped-21| DATE == opendategrouped|DATE == opendategrouped+21|DATE == opendategrouped+42|DATE == opendategrouped+63|DATE == opendategrouped+84|DATE == opendategrouped+105)
+
+wide_21d_y <- long_21d_y%>%
+  dcast(COUNTY+POPULATION+county_enroll+opendategrouped+threeweeks_before+Online_Only+Hybrid+On_Premises~DATE,value.var = "CUMDEATHS")
+
+```
+
+
+
+
+
