@@ -111,6 +111,23 @@ wide_21d_y <- long_21d_y%>%
 ```
 
 
+```{r fig.height=6, fig.width=6}
+OH_K12%>%
+ggplot(aes(x=as.Date(date),y=as.Date(opendategrouped)))+geom_point(aes(size = enrollment),alpha=0.1,color = 'coral')+labs(x='School Year Start Date',y='School Reopen Date Grouped by District')+theme_minimal()+scale_x_date(date_labels = "%m-%d",limits = c(as.Date('2020-07-05'),as.Date('2020-12-31')),date_breaks = "3 weeks")+scale_y_date(date_labels = "%m-%d",limits = c(as.Date('2020-07-05'),as.Date('2020-12-31')),date_breaks = "3 weeks")
+```
+
+
+```{r}
+open_reopen_enroll <- OH_K12%>%
+  distinct(county,county_enroll,district_enroll,leaid,date)%>%
+  group_by(county,date)%>%
+  summarise(date_enroll = sum(district_enroll))%>%
+  left_join(OH_K12%>%
+  distinct(county,county_enroll,district_enroll,leaid,opendategrouped)%>%
+  group_by(county,opendategrouped)%>%
+  summarise(reopen_enroll = sum(district_enroll)), by = 'county' )
+```
+
 
 
 

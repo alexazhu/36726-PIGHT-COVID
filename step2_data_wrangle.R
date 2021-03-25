@@ -98,6 +98,16 @@ colnames(wide_staffmask_enroll)[2] <- "Not required staff"
 # majority staff mask
 wide_staffmask_enroll[,'staff_mask']<- apply(wide_staffmask_enroll[,2:3], 1, function(x){names(which.max(x))})
 
+################## open vs. reopen dates ######################
+open_reopen_enroll <- OH_K12%>%
+  distinct(county,county_enroll,district_enroll,leaid,date)%>%
+  group_by(county,date)%>%
+  summarise(date_enroll = sum(district_enroll))%>%
+  left_join(OH_K12%>%
+              distinct(county,county_enroll,district_enroll,leaid,opendategrouped)%>%
+              group_by(county,opendategrouped)%>%
+              summarise(reopen_enroll = sum(district_enroll)), by = 'county' )
+
 
 ################## OH CASES ######################
 
