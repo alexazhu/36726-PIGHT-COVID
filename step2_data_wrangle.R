@@ -108,6 +108,18 @@ open_reopen_enroll <- OH_K12%>%
               group_by(county,opendategrouped)%>%
               summarise(reopen_enroll = sum(district_enroll)), by = 'county' )
 
+reopen_teaching_enroll <- OH_K12%>%
+  filter(teachingmethod%in%c('Online Only','On Premises','Hybrid'))%>%
+  distinct(county,county_enroll,district_enroll,leaid,opendategrouped,teachingmethod)%>%
+  group_by(county,opendategrouped,teachingmethod)%>%
+  summarise(reopen_prop = sum(district_enroll/county_enroll))
+
+reopen_teaching_enroll%>%
+  group_by(county,teachingmethod)%>%
+  mutate(teaching_prop = sum(reopen_prop))%>%
+  group_by(county)%>%
+  slice(which.max(teaching_prop))%>%
+  ggplot(aes(x = opendategrouped,fill= teachingmethod))+facet_wrap(~teachingmethod)+geom_bar(stat = "count")+theme_minimal()+theme(axis.text = element_text(size = 10),title=element_text(size=13),legend.text = element_text(size=13))
 
 ################## OH CASES ######################
 
