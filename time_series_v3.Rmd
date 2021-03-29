@@ -12,16 +12,12 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Select varible of interests
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 source("step2_data_wrangle.R")
 ################### school reopen dates ################### 
 district_policies <- OH_K12 %>%
   distinct(county,county_enroll,leaid,district_enroll,schooltemporaryshutdown,opendategrouped,teachingmethod)
-```
-
 # Calculate the proportion and generate date brackets
-
-```{r}
 prop_opendate <- district_policies%>%
   filter(!schooltemporaryshutdown %in% c('Closed indefinitely','Pending','Unknown'))%>%
   group_by(county,county_enroll,opendategrouped)%>%
@@ -35,7 +31,7 @@ prop_opendate <- district_policies%>%
 ```
 
 ```{r}
-opendate_cases <- cases%>%
+opendate_cases <- case_mobility%>%
   inner_join(prop_opendate,by=c('COUNTY'='county'))%>%
   group_by(COUNTY)%>%
   filter(DATE>=opendategrouped & DATE<=beforechristmas)%>%
@@ -139,11 +135,13 @@ date.intercept <- as.Date("2020-11-24")
 confidence_level <- .95
 z_cl <- qnorm(confidence_level)
 
-
-cases %>%
+# case_policy_wide
+case_policy_wide <- case_mobility %>%
   left_join(county_policy_wide[,c("county","major_teaching")],
-            by = c("COUNTY" = "county")) %>%
-  na.omit() %>%
+            by = c("COUNTY" = "county")) %>%na.omit()
+
+# ploy
+case_policy_wide%>%
   group_by(DATE, major_teaching) %>%
   summarise(total_deaths = sum(CUMDEATHS),
             total_pop = sum(POPULATION),
@@ -163,7 +161,11 @@ cases %>%
     geom_vline(xintercept = date.intercept, linetype = "dashed") + 
     annotate("text",x = date.intercept,y = .001,
              label = date.intercept,
-             hjust = 1.1) + 
+             hjust = 1.0) + 
+    geom_vline(xintercept = as.Date('2020/11/03'), linetype = "dashed") +
+    annotate("text",x = as.Date('2020/11/03'),y = .0006,
+               label =as.Date('2020/11/03'),
+               hjust = 1.1) + 
     theme_bw() + 
     labs(x = "Date", y = "Total Death Proportion", 
          title = "Total Death Proportion by Teaching Method",
@@ -174,9 +176,95 @@ cases %>%
 #   scale_x_date(date_breaks = "2 month", date_labels = "%b-%y")
 ```
 
+```{r}
+case_mobility%>%
+  filter(DATE == '2020-09-09')%>%
+  mutate(death_prop = CUMDEATHS/POPULATION)%>%
+  ggplot(aes(x= part_time_work_prop_7d,y = death_prop))+geom_point()+theme_minimal()+labs(
+    x = "Fraction of devices that spent between 3 and 6 hours at work",
+    y = "Death prportion",
+    title='2020-09-01: before Fall reopening')+geom_smooth(method='lm', formula= y~x)
+
+case_mobility%>%
+  filter(DATE == '2020-09-22')%>%
+  mutate(death_prop = CUMDEATHS/POPULATION)%>%
+  ggplot(aes(x= part_time_work_prop_7d,y = death_prop))+geom_point()+theme_minimal()+labs(
+    x = "Fraction of devices that spent between 3 and 6 hours at work",
+    y = "Death prportion",
+    title='2020-09-22: around Fall reopening')+geom_smooth(method='lm', formula= y~x)
+
+case_mobility%>%
+  filter(DATE == '2020-10-03')%>%
+  mutate(death_prop = CUMDEATHS/POPULATION)%>%
+  ggplot(aes(x= part_time_work_prop_7d,y = death_prop))+geom_point()+theme_minimal()+labs(x = "Fraction of devices that spent between 3 and 6 hours at work",
+      y = "Death prportion",
+      title='2020-10-03: 3 weeks after Fall reopening')+geom_smooth(method='lm', formula= y~x)
+
+case_mobility%>%
+  filter(DATE == '2020-10-24')%>%
+  mutate(death_prop = CUMDEATHS/POPULATION)%>%
+  ggplot(aes(x= part_time_work_prop_7d,y = death_prop))+geom_point()+theme_minimal()+labs(x = "Fraction of devices that spent between 3 and 6 hours at work",
+      y = "Death prportion",
+      title='2020-10-24: 6 weeks after Fall reopening')+geom_smooth(method='lm', formula= y~x)
+
+case_mobility%>%
+  filter(DATE == '2020-11-24')%>%
+  mutate(death_prop = CUMDEATHS/POPULATION)%>%
+  ggplot(aes(x= part_time_work_prop_7d,y = death_prop))+geom_point()+theme_minimal()+labs(x = "Fraction of devices that spent between 3 and 6 hours at work",
+      y = "Death prportion",
+      title='2020-11-24: 3 weeks before Thanksgiving')+geom_smooth(method='lm', formula= y~x)
+
+
+case_mobility%>%
+  filter(DATE == '2020-12-09')%>%
+  mutate(death_prop = CUMDEATHS/POPULATION)%>%
+  ggplot(aes(x= part_time_work_prop_7d,y = death_prop))+geom_point()+theme_minimal()+labs(x = "Fraction of devices that spent between 3 and 6 hours at work",
+      y = "Death prportion",
+      title="2020-12-01: 3 weeks after Thanksgiving")+geom_smooth(method='lm', formula= y~x)
+
+
+#The fraction of devices that spent between 3 and 6 hours at a location other than their home during the daytime (SafeGraph’s)
+case_mobility%>%
+  filter(DATE == '2021-02-22')%>%
+  mutate(death_prop = CUMDEATHS/POPULATION)%>%
+  ggplot(aes(x= part_time_work_prop_7d,y = death_prop))+geom_point()+theme_minimal()+labs(x = "Fraction of devices that spent between 3 and 6 hours at work",
+      y = "Death prportion",
+      title="2021-02-22")+geom_smooth(method='lm', formula= y~x)
+```
+
+
 
 ```{r}
-lag_cases <- cases %>%
+avg_case_mobi <- case_policy_wide %>%
+  group_by(DATE, major_teaching) %>%
+  summarise(avg_ptwork_prop_7d = mean(part_time_work_prop_7d))
+
+avg_case_mobi%>%
+  ggplot(aes(x = DATE, y = avg_ptwork_prop_7d, color = major_teaching))+
+    geom_rect(data = avg_case_mobi[1,],
+            aes(xmin=as.Date("2020/08/26"), xmax=as.Date("2020/12/12"),
+                ymin=-Inf,ymax=Inf,color = NA,alpha=0.01), show.legend = F, fill = "orange") +  
+    geom_line(aes(color = major_teaching),size = 1, alpha = .8) + 
+        geom_vline(xintercept = date.intercept, linetype = "dashed") + 
+    annotate("text",x = date.intercept,y = .06,
+             label = date.intercept,
+             hjust = 1.0) + 
+    geom_vline(xintercept = as.Date('2020/11/03'), linetype = "dashed") +
+    annotate("text",x = as.Date('2020/11/03'),y = .11,
+               label =as.Date('2020/11/03'),
+               hjust = 1.1) + 
+    theme_bw() + 
+    labs(x = "Date", y = "Average Mobility Porportion", 
+         title = "Average Mobility Proportion by Teaching Method",
+         subtitle = "Red area represents the fall semester",
+         color = "Majority Teaching Method",
+         caption = "The fraction of devices that spent between 3 and 6 hours at a location other than their home during the daytime (SafeGraph’s)")+
+  theme(legend.position = "bottom")
+```
+
+
+```{r}
+lag_cases <- case_mobility %>%
   left_join(county_policy_wide[,c("county","major_teaching")],
             by = c("COUNTY" = "county")) %>%
   na.omit()%>%
@@ -223,4 +311,9 @@ ggplot(lag_cases,aes(x = DATE, y = death_prop_inc,
   scale_y_continuous(labels = comma)
 ```
 
+
+
+```{r}
+
+```
 
