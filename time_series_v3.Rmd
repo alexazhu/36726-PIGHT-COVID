@@ -1,7 +1,7 @@
 ---
-title: "Time series analysis"
-author: "Cheyenne Ehman"
-date: "3/26/2021"
+title: "Time series analysis with updated window definition"
+author: "Cheyenne Ehman, Ziyan Zhu"
+date: "3/29/2021"
 output: pdf_document
 ---
 
@@ -9,13 +9,11 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r}
-source("step2_data_wrangle.R")
-```
 
 # Select varible of interests
 
 ```{r}
+source("step2_data_wrangle.R")
 ################### school reopen dates ################### 
 district_policies <- OH_K12 %>%
   distinct(county,county_enroll,leaid,district_enroll,schooltemporaryshutdown,opendategrouped,teachingmethod)
@@ -93,7 +91,6 @@ start_of_window %>%
 
 require(scales)
 start_of_window %>%
-  #filter(y_label == '3 weeks after reopen' | y_label == 'Fall reopen')%>%
   group_by(COUNTY)%>%
   mutate(death_inc = CUMDEATHS-lag(CUMDEATHS))%>%
   drop_na()%>%
@@ -111,16 +108,19 @@ start_of_window %>%
 ```
 
 ```{r}
-start_end_window %>%
-  filter(window_id == "fall semester") %>%
-  mutate(death_prop_inc = (y1 - y0)/POPULATION) %>%
+start_of_window %>%
+  group_by(COUNTY)%>%
+  mutate(death_inc = CUMDEATHS-lag(CUMDEATHS))%>%
+  drop_na()%>%
+  mutate(death_prop_inc = round(death_inc/POPULATION,6))%>%
+  filter(y_label == "6 weeks after reopen") %>%
   ggplot(aes(x = Online_Only, y = death_prop_inc, color = major_teaching)) + 
   geom_point()+ 
   theme_bw() + 
   labs(x = "Proportion of Students learning Remote",
        y = "Death Proportion Increase",
-       title = "Y1 against X1",
-       subtitle = "During Fall Semester",
+       title = "Y1-Y0 against X1",
+       subtitle = "increase during 3-6 weeks of reopen",
        color = "Majority Teaching Method")
 
 ggsave("y1x1.jpg", width = 7, height = 5)
