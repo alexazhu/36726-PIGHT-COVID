@@ -12,6 +12,14 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Select varible of interests
 
+```{r}
+## If you don't have the covidcast package, run following line
+
+#devtools::install_github("cmu-delphi/covidcast", ref = "main", subdir = "R-packages/covidcast",dependencies = T)
+```
+
+
+
 ```{r message=FALSE, warning=FALSE}
 source("step2_data_wrangle.R")
 ################### school reopen dates ################### 
@@ -141,6 +149,7 @@ case_policy_wide <- case_mobility %>%
 # plot
 case_policy_wide%>%
   group_by(DATE, major_teaching) %>%
+  drop_na(major_teaching)%>%
   summarise(total_deaths = sum(CUMDEATHS),
             total_pop = sum(POPULATION),
             death_prop = total_deaths/total_pop,

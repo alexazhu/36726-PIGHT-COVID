@@ -134,10 +134,9 @@ cases <- cases%>%
   select(COUNTY,FIPS,DATE,CNTY_LAT,CNTY_LONG,POPULATION,CUMCONFIRMED,CUMDEATHS)
 
 ##################### get mobility data ########################
-if (!require("covidcast", character.only = TRUE)) {
-  devtools::install_github("cmu-delphi/covidcast", ref = "main", subdir = "R-packages/covidcast",dependencies = T)
-  library(covidcast, character.only = TRUE)
-}
+
+
+library(covidcast, character.only = TRUE)
 
 work <- suppressMessages(
   covidcast_signal(data_source = "safegraph", signal = "part_time_work_prop_7dav",
