@@ -134,7 +134,6 @@ cases <- cases%>%
   select(COUNTY,FIPS,DATE,CNTY_LAT,CNTY_LONG,POPULATION,CUMCONFIRMED,CUMDEATHS)
 
 ##################### get mobility data ########################
-
 library(covidcast)
 
 work <- suppressMessages(
