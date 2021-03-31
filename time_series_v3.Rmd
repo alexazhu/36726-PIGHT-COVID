@@ -182,6 +182,13 @@ case_policy_wide%>%
 # +
 #   scale_x_date(date_breaks = "2 month", date_labels = "%b-%y")
 ```
+```{r}
+case_mobility%>%
+  filter(COUNTY=="HARRISON")%>%
+  mutate(death_prop = CUMDEATHS/POPULATION)%>%
+  ggplot(aes(x=DATE,y=res_visit_prop))+geom_point()+geom_smooth()+labs(x="",y="Restaurant Visits")
+
+```
 
 ```{r fig.height=6, fig.width=6, message=FALSE, warning=FALSE}
 library(gridExtra)
@@ -250,7 +257,6 @@ grid.arrange(p12, p22, p32,p42,p52,p62,nrow = 3,ncol=2,widths = c(5,5),heights =
 
 grid.arrange(p13,p23,p33,p43,p53,p63,nrow = 3,ncol=2,widths = c(5,5),heights = c(3,3,3),bottom="Bar visits by population")
 ```
-
 
 
 
@@ -335,26 +341,39 @@ avg_res_visit%>%
 
 After removing missing values in each of the mobility measures, we end up with different sample size for each linear regression
 
-```{r}
-summary(lm(death_prop~work_prop_7d,data = case_policy_wide,na.action='na.omit'))
-summary(lm(death_prop~res_visit_prop,data = case_policy_wide,na.action='na.omit'))
-summary(lm(death_prop~bar_visit_prop,data = case_policy_wide,na.action='na.omit'))
-```
+__NOTES__:
 
-## NOTES:
+Considering the lagging deaths, if we want to know the part-time work effects on the deaths, we should fit 
 
-Though we are getting all significance at the end, I am suspective about the results. Please double check the code and input data, make sure it is not random.
+y1 death after 3 weeks ~ y0 death today + work_prop_7d today
+
+Check y0_label and y1_label for what window it is
 
 ```{r}
-summary(lm(death_prop~work_prop_7d+res_visit_prop,data = case_policy_wide,na.action='na.omit'))
+y1y0 <- start_of_window %>%
+  rename(y0_label = y_label)%>%
+  group_by(COUNTY)%>%
+  arrange(DATE)%>%
+  mutate(y0= death_prop,y1 = lead(y0,n=1))%>%
+  mutate(y1_label = lead(y0_label,n=1))%>%
+  drop_na(y1)
 
-summary(lm(death_prop~Hybrid+On_Premises+Online_Only,data = case_policy_wide))
+summary(lm(y1~y0+work_prop_7d,na.action='na.omit',data = y1y0))
+summary(lm(y1~y0+res_visit_prop,na.action='na.omit',data = y1y0))
+summary(lm(y1~y0+bar_visit_prop,na.action='na.omit',data = y1y0))
+```
 
-summary(lm(death_prop~work_prop_7d+Hybrid+On_Premises+Online_Only,data = case_policy_wide))
-
+```{r}
+summary(lm(y1~y0+Hybrid,data = y1y0))
+summary(lm(y1~y0+On_Premises,data = y1y0))
+summary(lm(y1~y0+Online_Only,data = y1y0))
 ```
 
 
+
+```{r}
+summary(lm(y1~y0+work_prop_7d+On_Premises,na.action='na.omit',data = y1y0))
+```
 
 
 ```{r}

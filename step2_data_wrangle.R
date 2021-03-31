@@ -164,11 +164,13 @@ mobility <- work%>%
               select(-stderr,-sample_size),by = c("geo_value","time_value"))%>%
   select(geo_value,time_value,work_prop_7d,work_std,work_sample_size,res_visit_prop,bar_visit_prop)
   
+write.csv(mobility,"mobility.csv")
 
 case_mobility <- mobility%>%
   right_join(cases,by=c("geo_value"="FIPS","time_value"="DATE"))%>%
   rename(FIPS = geo_value,DATE = time_value,)
 
+write.csv(case_mobility,"case_mobility.csv")
 ##################### calculate death prop ########################
 
 # county-wise death proportions = cum deaths/population on 2021-02-22
