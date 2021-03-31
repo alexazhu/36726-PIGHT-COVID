@@ -12,6 +12,14 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Select varible of interests
 
+```{r}
+## If you don't have the covidcast package, run following line
+
+#devtools::install_github("cmu-delphi/covidcast", ref = "main", subdir = "R-packages/covidcast",dependencies = T)
+```
+
+
+
 ```{r message=FALSE, warning=FALSE}
 source("step2_data_wrangle.R")
 ################### school reopen dates ################### 
@@ -141,6 +149,7 @@ case_policy_wide <- case_mobility %>%
 # plot
 case_policy_wide%>%
   group_by(DATE, major_teaching) %>%
+  drop_na(major_teaching)%>%
   summarise(total_deaths = sum(CUMDEATHS),
             total_pop = sum(POPULATION),
             death_prop = total_deaths/total_pop,
@@ -254,8 +263,8 @@ avg_work <- case_policy_wide %>%
 avg_work%>%
   ggplot(aes(x = DATE, y = avg_ptwork_prop_7d, color = major_teaching))+
     geom_rect(data = avg_work[1,],
-            aes(xmin=as.Date("2020/08/26"), xmax=as.Date("2020/12/12"),
-                ymin=-Inf,ymax=Inf,color = NA,alpha=0.01), show.legend = F, fill = "orange") +  
+            aes(xmin=as.Date("2020/08/26"), xmax=as.Date("2020/12/12")),
+                ymin=-Inf,ymax=Inf,color = NA,alpha=0.3,show.legend = F, fill = "orange") +  
     geom_line(aes(color = major_teaching),size = 1, alpha = .8) + 
         geom_vline(xintercept = date.intercept, linetype = "dashed") + 
     annotate("text",x = date.intercept,y = .06,
@@ -284,8 +293,8 @@ avg_bar_visit <- case_policy_wide %>%
 avg_bar_visit%>%
   ggplot(aes(x = DATE, y = avg_bar_visit, color = major_teaching))+
     geom_rect(data = avg_bar_visit[1,],
-            aes(xmin=as.Date("2020/08/26"), xmax=as.Date("2020/12/12"),
-                ymin=-Inf,ymax=Inf,color = NA,alpha=0.01), show.legend = F, fill = "orange") +  
+            aes(xmin=as.Date("2020/08/26"), xmax=as.Date("2020/12/12")),
+                ymin=-Inf,ymax=Inf,color = NA,alpha=0.3, show.legend = F, fill = "orange") +  
     #geom_point(size = 2, alpha = .8)+
     geom_smooth(size = 1, alpha = .5) + 
     theme_bw() + 
@@ -305,10 +314,11 @@ avg_res_visit <- case_policy_wide %>%
 
 
 avg_res_visit%>%
+  drop_na(major_teaching)%>%
   ggplot(aes(x = DATE, y = avg_res_visit, color = major_teaching))+
     geom_rect(data = avg_res_visit[1,],
-            aes(xmin=as.Date("2020/08/26"), xmax=as.Date("2020/12/12"),
-                ymin=-Inf,ymax=Inf,color = NA,alpha=0.01), show.legend = F, fill = "orange") +  
+            aes(xmin=as.Date("2020/08/26"), xmax=as.Date("2020/12/12")),
+                ymin=-Inf,ymax=Inf,color = NA,alpha=0.3, show.legend = F, fill = "orange") +  
     #geom_point(size = 1, alpha = .8)+
     geom_smooth(size = 1, alpha = .5) + 
     theme_bw() + 
