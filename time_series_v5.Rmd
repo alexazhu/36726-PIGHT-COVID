@@ -45,11 +45,11 @@ require(lubridate)
 opendate_cases <- case_mobility%>%
   inner_join(major_opendate,by=c('COUNTY'='county'))%>%
   group_by(COUNTY)%>%
-  filter(DATE>=reopen_3w_after - month(2) & DATE<= as.Date('2020-12-25'))%>%
+  filter(DATE>=reopen_3w_after - 56 & DATE<= as.Date('2020-12-25'))%>%
   ungroup()%>%
   mutate(window_id = case_when(
     DATE <= reopen_3w_after~"2month_before_3wafteropen",
-    reopen_3w_after<DATE & DATE<=reopen_3w_after+ month(2)~"2month_after_3wafteropen",
+    reopen_3w_after<DATE & DATE<=reopen_3w_after+ 56~"2month_after_3wafteropen",
     TRUE ~ 'Other'))%>%
   mutate(death_prop_1000 = round(CUMDEATHS/POPULATION,5)*1000,
          window_id = as.factor(window_id))%>%
@@ -80,12 +80,24 @@ ggplot(y1y0, aes(x = y1)) +
   theme_bw() + 
   labs(x = "Y1", y = "Frequency",
        title = "Marginal Distribution of Y1")
-#hist(y1y0$y0,main = "Histogram of Death Incidents per 1000", xlab = "y0")
-ggplot(y1y0, aes(x = y0)) + 
+
+ggplot(y1y0, aes(x = log(y1))) + 
   geom_histogram(bins = 10, fill = "salmon") + 
   theme_bw() + 
   labs(x = "Y1", y = "Frequency",
+       title = "Marginal Distribution of log(Y1)")
+#hist(y1y0$y0,main = "Histogram of Death Incidents per 1000", xlab = "y0")
+ggplot(y1y0, aes(x = y0)) + 
+  geom_histogram(bins = 15, fill = "salmon") + 
+  theme_bw() + 
+  labs(x = "Y1", y = "Frequency",
        title = "Marginal Distribution of Y0")
+
+ggplot(y1y0, aes(x = log(y0))) + 
+  geom_histogram(bins = 15, fill = "salmon") + 
+  theme_bw() + 
+  labs(x = "Y1", y = "Frequency",
+       title = "Marginal Distribution of log(Y0)")
 ```
 
 # Y1 on Y0
@@ -101,7 +113,7 @@ summary(lm(y1~y0,data = y1y0))
 # on teaching method alone
 #summary(lm(y1~Hybrid,data = y1y0))
 #summary(lm(y1~On_Premises,data = y1y0))
-summary(lm(y1~Online_Only,data = y1y0)) # only this one is significant
+#summary(aov(y1~Online_Only,data = y1y0))
 
 #summary(lm(y1~y0+Hybrid,data = y1y0))
 #summary(lm(y1~y0+On_Premises,data = y1y0))
@@ -113,12 +125,12 @@ summary(lm(y1~Online_Only,data = y1y0)) # only this one is significant
 
 ```{r}
 # NONE SIGNIFICANT
-#summary(lm(y1~avg_work_7d,na.action='na.omit',data = y1y0))
+summary(lm(y1~avg_work_7d,na.action='na.omit',data = y1y0)) # SIGNIFICANT
 #summary(lm(y1~avg_res_visit,na.action='na.omit',data = y1y0))
 #summary(lm(y1~avg_bar_visit,na.action='na.omit',data = y1y0))
 
 
-#summary(lm(y1~y0+avg_work_7d,na.action='na.omit',data = y1y0))
+summary(lm(y1~y0+avg_work_7d,na.action='na.omit',data = y1y0)) # WORK SIGNIFICANT
 #summary(lm(y1~y0+avg_res_visit,na.action='na.omit',data = y1y0))
 #summary(lm(y1~y0+avg_bar_visit,na.action='na.omit',data = y1y0))
 ```
