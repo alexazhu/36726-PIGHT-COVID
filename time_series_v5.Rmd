@@ -1,0 +1,135 @@
+---
+title: "Time series analysis with updated window definition"
+author: "Cheyenne Ehman, Ziyan Zhu"
+date: "3/29/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Select varible of interests
+
+```{r}
+## If you don't have the covidcast package, run following line
+
+#devtools::install_github("cmu-delphi/covidcast", ref = "main", subdir = "R-packages/covidcast",dependencies = T)
+```
+
+
+
+```{r message=FALSE, warning=FALSE}
+source("step2_data_wrangle.R")
+################### school reopen dates ################### 
+district_policies <- OH_K12 %>%
+  distinct(county,county_enroll,leaid,district_enroll,schooltemporaryshutdown,opendategrouped,teachingmethod)
+
+# Calculate the proportion and generate date brackets
+major_opendate <- district_policies%>%
+  filter(!schooltemporaryshutdown %in% c('Closed indefinitely','Pending','Unknown'))%>%
+  group_by(county,county_enroll,opendategrouped)%>%
+  summarise(n_opendate = sum(district_enroll))%>% # number of students under certain date for each county
+  mutate(prop_opendate = round(n_opendate/county_enroll,2))%>% # proportion
+  group_by(county)%>%
+  #filter(prop_opendate>0.6)%>% 
+  slice(which.max(prop_opendate))%>% # filter large proportions of students with same reopen dates #can be replaced with # slice(which.max(prop_opendate))#
+  mutate(reopen_3w_after = opendategrouped + 21)%>%
+  select(-n_opendate)
+```
+
+
+```{r}
+require(lubridate)
+opendate_cases <- case_mobility%>%
+  inner_join(major_opendate,by=c('COUNTY'='county'))%>%
+  group_by(COUNTY)%>%
+  filter(DATE>=reopen_3w_after - month(2) & DATE<= as.Date('2020-12-25'))%>%
+  ungroup()%>%
+  mutate(window_id = case_when(
+    DATE <= reopen_3w_after~"2month_before_3wafteropen",
+    reopen_3w_after<DATE & DATE<=reopen_3w_after+ month(2)~"2month_after_3wafteropen",
+    TRUE ~ 'Other'))%>%
+  mutate(death_prop_1000 = round(CUMDEATHS/POPULATION,5)*1000,
+         window_id = as.factor(window_id))%>%
+  left_join(wide_teaching_enroll,by=c('COUNTY'='county','county_enroll'))
+# select the start date and end date data for each window of time
+  
+death_incident_window <- opendate_cases%>%
+  group_by(COUNTY,window_id)%>%
+  arrange(DATE)%>%
+  mutate(avg_work_7d = mean(work_prop_7d,na.rm = T), avg_res_visit = mean(res_visit_prop,na.rm = T),avg_bar_visit = mean(bar_visit_prop,na.rm = T) )%>%
+  filter(row_number()==1 | row_number()==n())%>%
+  mutate(death_incident = diff(CUMDEATHS),death_incident_per_1000 = diff(CUMDEATHS)*1000/POPULATION)%>%
+  distinct(COUNTY,POPULATION,avg_work_7d,avg_res_visit,avg_bar_visit,Online_Only,On_Premises,Hybrid,death_incident,death_incident_per_1000,window_id)
+```
+
+
+```{r}
+y1y0 <- death_incident_window %>%
+  filter(window_id!='Other')%>%
+  group_by(COUNTY)%>%
+  mutate(y1= death_incident_per_1000, y0 = lag(death_incident_per_1000,n=1))%>%
+  arrange(COUNTY)%>%
+  drop_na(y0) 
+ 
+#hist(y1y0$y1,main = "Histogram of Death Incidents per 1000", xlab = "y1")
+ggplot(y1y0, aes(x = y1)) + 
+  geom_histogram(bins = 10, fill = "salmon") + 
+  theme_bw() + 
+  labs(x = "Y1", y = "Frequency",
+       title = "Marginal Distribution of Y1")
+#hist(y1y0$y0,main = "Histogram of Death Incidents per 1000", xlab = "y0")
+ggplot(y1y0, aes(x = y0)) + 
+  geom_histogram(bins = 10, fill = "salmon") + 
+  theme_bw() + 
+  labs(x = "Y1", y = "Frequency",
+       title = "Marginal Distribution of Y0")
+```
+
+# Y1 on Y0
+
+```{r}
+summary(lm(y1~y0,data = y1y0))
+# NOT SIGNIFICANT
+```
+
+# Y1 on X = teaching method and Y0
+
+```{r}
+# on teaching method alone
+#summary(lm(y1~Hybrid,data = y1y0))
+#summary(lm(y1~On_Premises,data = y1y0))
+summary(lm(y1~Online_Only,data = y1y0)) # only this one is significant
+
+#summary(lm(y1~y0+Hybrid,data = y1y0))
+#summary(lm(y1~y0+On_Premises,data = y1y0))
+#summary(lm(y1~y0+Online_Only,data = y1y0))
+```
+
+
+# Y1 on Mobility Measures and Y0
+
+```{r}
+# NONE SIGNIFICANT
+#summary(lm(y1~avg_work_7d,na.action='na.omit',data = y1y0))
+#summary(lm(y1~avg_res_visit,na.action='na.omit',data = y1y0))
+#summary(lm(y1~avg_bar_visit,na.action='na.omit',data = y1y0))
+
+
+#summary(lm(y1~y0+avg_work_7d,na.action='na.omit',data = y1y0))
+#summary(lm(y1~y0+avg_res_visit,na.action='na.omit',data = y1y0))
+#summary(lm(y1~y0+avg_bar_visit,na.action='na.omit',data = y1y0))
+```
+
+# Y1 on all confounders
+
+```{r}
+# NONE SIGNIFICANT
+summary(lm(y1~y0+avg_work_7d+Online_Only,na.action='na.omit',data = y1y0))
+```
+
+
+
+
