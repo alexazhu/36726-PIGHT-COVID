@@ -20,6 +20,7 @@ cases_by_age <- read_excel("OhiobyAge.xlsx")
 ```{r}
 library(tidyverse)
 library(lubridate)
+require(scales)
 
 
 rolling_age_cases <- cases_by_age %>%
@@ -41,8 +42,10 @@ ggplot(rolling_age_cases, aes(x=Date)) +
   scale_y_continuous(
     # Features of the first axis
     name = "% Daily Cases for 0-19 Year Age Group",
+    labels = function(x){paste0(x, "%")},
     # Add a second axis and specify its features
-    sec.axis = sec_axis(~.*coeff, name="New Daily Cases for Entire Population")
+    sec.axis = sec_axis(~.*coeff, name="New Daily Cases for Entire Population",
+                        label=comma)
   ) +
   geom_rect(data=rolling_age_cases[1,],
             aes(xmin=as.POSIXct ("2020/08/18"), xmax=as.POSIXct ("2020/12/12"),
@@ -71,6 +74,7 @@ cases_by_age_long <- cases_by_age %>%
 
 ggplot(cases_by_age_long,aes(x = Date, y = roll_percent_cases, color = age_group)) + 
   geom_line(na.rm = T) +
+  scale_y_continuous(labels = function(x){paste0(x, "%")})+
   geom_rect(data=cases_by_age_long[1,],
             aes(xmin=as.POSIXct ("2020/08/18"), xmax=as.POSIXct ("2020/12/12"),
                 ymin=-Inf,ymax=Inf),
