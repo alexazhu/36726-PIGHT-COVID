@@ -37,48 +37,53 @@ major_opendate <- district_policies%>%
   slice(which.max(prop_opendate))%>% # filter large proportions of students with same reopen dates #can be replaced with # slice(which.max(prop_opendate))#
   mutate(reopen_3w_after = opendategrouped + 21)%>%
   select(-n_opendate)
+
+major_opendate%>%
+  ggplot(aes(x=opendategrouped))+geom_bar(stat="count")
 ```
 
 
 ```{r}
-opendate_cases <- case_mobility%>%
+opendate_deaths <- case_mobility%>%
   inner_join(major_opendate,by=c('COUNTY'='county'))%>%
   group_by(COUNTY)%>%
-  filter(DATE>=reopen_3w_after - 42 & DATE<= as.Date('2020-12-25'))%>%
+  filter(opendategrouped < as.Date("2020-10-15"))%>% ## drop late open dates
+  filter(DATE>=reopen_3w_after - 56 & DATE<= as.Date('2020-12-25'))%>% # window with 56 days
   ungroup()%>%
-  mutate(window_id = case_when(
+  mutate(window_id = case_when( 
     DATE <= reopen_3w_after~"2month_before_3wafteropen",
-    reopen_3w_after<DATE & DATE<=reopen_3w_after+42~"2month_after_3wafteropen",
+    reopen_3w_after < DATE ~"2month_after_3wafteropen",
     TRUE ~ 'Other'))%>%
-  mutate(death_prop_1000 = round(CUMDEATHS/POPULATION,5)*1000,
+  mutate(death_per_1000 = round(CUMDEATHS/POPULATION,5)*1000,case_per_1000 = round(CUMCONFIRMED/POPULATION,5)*1000,
          window_id = as.factor(window_id))%>%
   left_join(wide_teaching_enroll,by=c('COUNTY'='county','county_enroll'))
 # select the start date and end date data for each window of time
   
-death_incident_window <- opendate_cases%>%
+death_incidence_window <- opendate_deaths%>%
   group_by(COUNTY,window_id)%>%
   arrange(DATE)%>%
   mutate(avg_work_7d = mean(work_prop_7d,na.rm = T), avg_res_visit = mean(res_visit_prop,na.rm = T),avg_bar_visit = mean(bar_visit_prop,na.rm = T) )%>%
   filter(row_number()==1 | row_number()==n())%>%
-  mutate(death_incident = diff(CUMDEATHS),death_incident_per_1000 = diff(CUMDEATHS)*1000/POPULATION)%>%
-  distinct(COUNTY,POPULATION,avg_work_7d,avg_res_visit,avg_bar_visit,Online_Only,On_Premises,Hybrid,death_incident,death_incident_per_1000,window_id)
+  mutate(death_incidence = diff(CUMDEATHS),death_incidence_per_1000 = diff(CUMDEATHS)*1000/POPULATION)%>%
+  distinct(COUNTY,POPULATION,avg_work_7d,avg_res_visit,avg_bar_visit,Online_Only,On_Premises,Hybrid,major_teaching,death_incidence,death_incidence_per_1000,window_id)
+
 ```
 
 
 ```{r}
-y1y0 <- death_incident_window %>%
+y1y0 <- death_incidence_window %>%
   filter(window_id!='Other')%>%
   group_by(COUNTY)%>%
-  mutate(y1= death_incident_per_1000, y0 = lag(death_incident_per_1000,n=1))%>%
+  mutate(y1= death_incidence_per_1000, y0 = lag(death_incidence_per_1000,n=1))%>%
   drop_na(y0)
  
 hist(y1y0$y1,main = "Histogram of Death Incidents per 1000", xlab = "y1")
 hist(y1y0$y0,main = "Histogram of Death Incidents per 1000", xlab = "y0")
-```
 
+summary(lm(y1~y0,na.action='na.omit',data = y1y0))
+summary(lm(y1~POPULATION,na.action='na.omit',data = y1y0))
+summary(lm(y1~avg_work_7d,na.action='na.omit',data = y1y0))
 
-
-```{r}
 summary(lm(y1~y0+avg_work_7d,na.action='na.omit',data = y1y0))
 summary(lm(y1~y0+avg_res_visit,na.action='na.omit',data = y1y0))
 summary(lm(y1~y0+avg_bar_visit,na.action='na.omit',data = y1y0))
@@ -91,7 +96,99 @@ summary(lm(y1~y0+Online_Only,data = y1y0))
 
 
 ```{r}
+summary(lm(y1~y0+Online_Only+On_Premises,data = y1y0))
+
+summary(lm(y1~y0+avg_work_7d+On_Premises,data = y1y0))
+```
+
+
+
+```{r}
+opendate_cases <- case_mobility%>%
+  inner_join(major_opendate,by=c('COUNTY'='county'))%>%
+  group_by(COUNTY)%>%
+  filter(opendategrouped < as.Date("2020-10-15"))%>%
+  filter(DATE>=opendategrouped - 14 & DATE<= as.Date('2020-12-25'))%>%
+  ungroup()%>%
+  mutate(window_id = case_when(
+    DATE <= opendategrouped+7 ~"3w_before_1wafteropen",
+    opendategrouped+7<DATE & DATE<=opendategrouped+28~"3w_after_1wafteropen",
+    TRUE ~ 'Other'))%>%
+  mutate(death_per_1000 = round(CUMDEATHS/POPULATION,5)*1000,case_per_1000 = round(CUMCONFIRMED/POPULATION,5)*1000,
+         window_id = as.factor(window_id))%>%
+  left_join(wide_teaching_enroll,by=c('COUNTY'='county','county_enroll'))
+# select the start date and end date data for each window of time
+  
+incidence_window <- opendate_cases%>%
+  group_by(COUNTY,window_id)%>%
+  arrange(DATE)%>%
+  mutate(avg_work_7d = mean(work_prop_7d,na.rm = T), avg_res_visit = mean(res_visit_prop,na.rm = T),avg_bar_visit = mean(bar_visit_prop,na.rm = T) )%>%
+  filter(row_number()==1 | row_number()==n())%>%
+  mutate(incidence = diff(CUMCONFIRMED),incidence_per_1000 = diff(CUMCONFIRMED)*1000/POPULATION)%>%
+  distinct(COUNTY,POPULATION,avg_work_7d,avg_res_visit,avg_bar_visit,Online_Only,On_Premises,Hybrid,major_teaching,incidence,incidence_per_1000,window_id)
+```
+
+
+
+```{r}
+logy1y0 <- incidence_window %>%
+  filter(window_id!='Other')%>%
+  group_by(COUNTY)%>%
+  mutate(y1= log(incidence), y0 = lag(log(incidence),n=1))%>%
+  drop_na(y0)
+ 
+hist(y1y0$y1,main = "Histogram of log Case Incidence per 1000", xlab = "y1")
+hist(y1y0$y0,main = "Histogram of log Case Incidence per 1000", xlab = "y0")
+
+summary(lm(y1~y0,na.action='na.omit',data = logy1y0))
+summary(lm(y1~POPULATION,na.action='na.omit',data = logy1y0))
+summary(lm(y1~avg_work_7d,na.action='na.omit',data = logy1y0))
+
+summary(lm(y1~y0+avg_work_7d,na.action='na.omit',data = logy1y0))
+summary(lm(y1~y0+avg_res_visit,na.action='na.omit',data = logy1y0))
+summary(lm(y1~y0+avg_bar_visit,na.action='na.omit',data = logy1y0))
+
+
+summary(lm(y1~y0+Hybrid,data = logy1y0))
+summary(lm(y1~y0+On_Premises,data = logy1y0))
+summary(lm(y1~y0+Online_Only,data = logy1y0))
+
+summary(lm(y1~y0+Online_Only,data = logy1y0))
+```
+
+
+```{r}
+y1y0 <- incidence_window %>%
+  filter(window_id!='Other')%>%
+  group_by(COUNTY)%>%
+  mutate(y1= incidence_per_1000, y0 = lag(incidence_per_1000,n=1))%>%
+  drop_na(y0)
+ 
+hist(y1y0$y1,main = "Histogram of log Case Incidence per 1000", xlab = "y1")
+hist(y1y0$y0,main = "Histogram of log Case Incidence per 1000", xlab = "y0")
+
+summary(lm(y1~y0,na.action='na.omit',data = y1y0))
+summary(lm(y1~POPULATION,na.action='na.omit',data = y1y0))
+summary(lm(y1~avg_work_7d,na.action='na.omit',data = y1y0))
+
+summary(lm(y1~y0+avg_work_7d,na.action='na.omit',data = y1y0))
+summary(lm(y1~y0+avg_res_visit,na.action='na.omit',data = y1y0))
+summary(lm(y1~y0+avg_bar_visit,na.action='na.omit',data = y1y0))
+
+
+summary(lm(y1~y0+Hybrid,data = y1y0))
+summary(lm(y1~y0+On_Premises,data = y1y0))
+summary(lm(y1~y0+Online_Only,data = y1y0))
+
+```
+
+
+
+```{r}
+
+summary(lm(y1~y0+major_teaching,na.action='na.omit',data = y1y0))
 summary(lm(y1~y0+avg_work_7d+On_Premises,na.action='na.omit',data = y1y0))
+
 ```
 
 
