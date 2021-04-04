@@ -208,29 +208,35 @@ library(forcats)
 
 ```{r}
 # Plot
-enrol_district<-enrol_district[,-2]
-enrol_district<-enrol_district%>%filter(teachingmethod!=0)
-enrol_district$opendategrouped<-as.Date(enrol_district$opendategrouped)
+options(scipen=10000)
 
-ggplot() +
-  geom_bar(data=enrol_district,aes(y=district_enroll, x=opendategrouped,  fill=teachingmethod),position = 'stack', stat = 'identity') +
-  geom_line(data=ohio_age%>%filter(date>=as.Date("2020-08-01")&date<=as.Date("2021-01-01")),aes(x=date,y=case_19_per*12000,col="Age 0-19 Percentage"))+
-  scale_y_continuous(
-    sec.axis = sec_axis( trans=~./12000, name="Age 0-19 Percentage")
-  )+
-  geom_rect(data = enrol_district[1,],
-            aes(xmin = as.Date('2020/08/01'), 
-                xmax = as.Date('2020/12/12'), ymin=-Inf, ymax=Inf), 
+
+state_open_teaching_enroll%>%
+  filter(teachingmethod %in% c("On Premises","Hybrid"))%>%
+  ggplot(aes(y=opendate_teaching_county_enroll/1000, x=opendate,  fill=teachingmethod)) +
+  geom_bar(,position = 'stack', stat = 'identity',width = 3) +
+  geom_rect(data = state_open_teaching_enroll[1,],
+            aes(xmin = as.Date('2020/08/26'), 
+                xmax = as.Date('2020/12/15'), ymin=-Inf, ymax=Inf), 
             color = NA, alpha = 0.2, show.legend = F, fill = 'orange') +
-    xlab('School Reopen Date (grouped by District)') +
-    ylab('Student Enrollment') +
-  ggtitle('Number of Student Enrollment on Different School Reopen Dates \n(On Premises & Hybrid)') +labs(col="")+
+  labs(x='School Reopen Date',y = 'County Student Enrollment / 1000',title = 'Number of Student Enrollment on Different School Reopen Dates \n(On Premises & Hybrid)',col="",fill="Majority Teaching Method")+ xlim(as.Date('2020/08/01'),as.Date('2021/01/01'))+
   scale_fill_manual(values = c("#00BA38", "#F8766D")) +
-  theme_bw()+theme(legend.position="bottom")
+  theme_bw()+theme(legend.position= c(0.77, 0.8),legend.title = element_text(size=13),legend.text = element_text(size=13),axis.title = element_text(size=15),axis.text = element_text(size=15),legend.background = element_rect(fill = alpha("orange",0.0)),legend.key.size = unit(1.4,"lines"),title = element_text(size=12.9))
+
+
+state_open_teaching_enroll%>%
+  filter(teachingmethod %in% c("On Premises","Hybrid"))%>%
+  ggplot(aes(y=opendate_teaching_state_prop, x=opendate,  fill=teachingmethod)) +
+  geom_bar(,position = 'stack', stat = 'identity',width = 3) +ylim(0,1)+
+  geom_rect(data = state_open_teaching_enroll[1,],
+            aes(xmin = as.Date('2020/08/26'), 
+                xmax = as.Date('2020/12/15'), ymin=-Inf, ymax=Inf), 
+            color = NA, alpha = 0.2, show.legend = F, fill = 'orange') +
+  labs(x='School Reopen Date',y = 'County Student Propotion',title = 'Percentage of Student on Different School Reopen Dates \n(On Premises & Hybrid)',col="",fill="Majority Teaching Method")+ xlim(as.Date('2020/08/01'),as.Date('2021/01/01'))+
+  scale_fill_manual(values = c("#00BA38", "#F8766D")) +
+  theme_bw()+theme(legend.position= c(0.77, 0.8),legend.title = element_text(size=13),legend.text = element_text(size=13),axis.title = element_text(size=15),axis.text = element_text(size=15),legend.background = element_rect(fill = alpha("orange",0.0)),legend.key.size = unit(1.4,"lines"),title = element_text(size=12.9))
+
 ```
 
-```{r}
-
-```
 
 
