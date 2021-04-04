@@ -1,6 +1,6 @@
 ---
 title: "Presentation Graphs"
-author: "Ziyan Zhu"
+author: "Cheyenne, Ziyan"
 date: "4/4/2021"
 output: pdf_document
 ---
@@ -13,6 +13,90 @@ knitr::opts_chunk$set(echo = TRUE)
 source("step2_data_wrangle.R")
 ```
 
+# Case comparison by age
+
+```{r}
+library(readxl)
+cases_by_age <- read_excel("OhiobyAge.xlsx")
+```
+
+
+```{r}
+library(tidyverse)
+library(lubridate)
+require(scales)
+
+
+rolling_age_cases <- cases_by_age %>%
+  mutate(youth_prop_roll = zoo::rollmean(`00_19/total(%)`, k = 7, fill = NA),
+         all_roll = zoo::rollmean(`00_80+`, k = 7, fill = NA))
+
+colors <- c("Total Daily Cases" = "black",
+            "0-19 Age / Total Cases (%)" = "gray")
+
+coeff <- 200
+
+ggplot(rolling_age_cases, aes(x=Date)) + 
+  geom_line( aes(y=youth_prop_roll,
+                 color = "0-19 Age / Total Cases (%)"), 
+             na.rm = T)+
+  geom_line( aes(y=all_roll/coeff,
+                 color = "Total Daily Cases"), 
+             na.rm = T) +
+  scale_y_continuous(
+    # Features of the first axis
+    name = "% Daily Cases for 0-19 Year Age Group",
+    labels = function(x){paste0(x, "%")},
+    # Add a second axis and specify its features
+    sec.axis = sec_axis(~.*coeff, name="New Daily Cases for Entire Population",
+                        label=comma)
+  ) +
+  geom_rect(data=rolling_age_cases[1,],
+            aes(xmin=as.POSIXct ("2020/08/18"), xmax=as.POSIXct ("2020/12/12"),
+                ymin=-Inf,ymax=Inf),
+            color = NA,alpha=0.2, show.legend = F, fill = "orange") + 
+  geom_vline(xintercept = as.POSIXct ("2020/08/18") + days(7),lty = 2)+ 
+  xlim(c(as.POSIXct ("2020/08/01"),as.POSIXct ("2021/01/01"))) + 
+  labs(title = "Total Cases and Proportion of Cases in 0-19 Year Age Group",
+       subtitle = "Yellow Area represents the fall semester",
+       caption = "Smoothed using a 7 day moving average",
+       color = "")+
+  scale_color_manual(values = colors)+ 
+  theme_bw() + 
+  theme(legend.position='bottom')
+
+#ggsave("state_level_age.jpg",width = 7, height = 5)
+```
+
+```{r}
+cases_by_age_long <- cases_by_age %>%
+  gather(age_group, percent_cases, 
+         `00_19/total(%)`:`80+/total(%)`,
+         factor_key=TRUE) %>%
+  group_by(age_group) %>%
+  mutate(roll_percent_cases= zoo::rollmean(percent_cases, k = 7, fill = NA))
+
+ggplot(cases_by_age_long,aes(x = Date, y = roll_percent_cases, color = age_group)) + 
+  geom_line(na.rm = T) +
+  scale_y_continuous(labels = function(x){paste0(x, "%")})+
+  geom_rect(data=cases_by_age_long[1,],
+            aes(xmin=as.POSIXct ("2020/08/18"), xmax=as.POSIXct ("2020/12/12"),
+                ymin=-Inf,ymax=Inf),
+            color = NA,alpha=0.2, show.legend = F, fill = "orange")  + xlim(c(as.POSIXct ("2020/08/01"),as.POSIXct ("2021/01/01"))) + 
+  theme_bw() + 
+  labs(title = "Proportion of Cases by Age Group",
+       subtitle = "Yellow Area represents the fall semester",
+       y = "% Daily Cases",
+       caption = "Smoothed using a 7 day moving average",
+       color = "Age Group")+ theme_bw()+
+  theme(legend.position="")+
+  theme(axis.title = element_text(size=15),axis.text = element_text(size=15),title = element_text(size=15))
+
+#ggsave("prop_age.jpg", width = 7,height = 5)
+```
+
+
+
 ## 
 ```{r}
 # Plot
@@ -24,7 +108,7 @@ state_open_teaching_enroll%>%
   ggplot(aes(y=opendate_teaching_county_enroll/1000, x=opendate,  fill=teachingmethod)) +
   geom_bar(position = 'stack', stat = 'identity',width = 3) +
   geom_rect(data = state_open_teaching_enroll[1,],
-            aes(xmin = as.Date('2020/08/26'), 
+            aes(xmin = as.Date('2020/08/18'), 
                 xmax = as.Date('2020/12/15'), ymin=-Inf, ymax=Inf), 
             color = NA, alpha = 0.2, show.legend = F, fill = 'orange') +
   labs(x='School Reopen Date',y = 'County Student Enrollment / 1000',title = 'Number of Student Enrollment on Different School Reopen Dates \n(On Premises & Hybrid)',col="",fill="Majority Teaching Method")+ xlim(as.Date('2020/08/01'),as.Date('2021/01/01'))+
