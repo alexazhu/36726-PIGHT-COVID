@@ -475,3 +475,37 @@ date_mobility%>%
        color = "Majority Teaching Method",title = "Number of Restaurant Visit Normalized by Population") +
   theme(legend.position = "bottom")+theme(legend.title = element_text(size=13),legend.text = element_text(size=13),axis.title = element_text(size=15),axis.text = element_text(size=15),legend.background = element_rect(fill = alpha("orange",0.0)),legend.key.size = unit(1.4,"lines"),title = element_text(size=12.9))
 ```
+
+
+
+```{r}
+# plot death prop over time by the majority teaching method
+wide_teaching_enroll%>%
+  left_join(case_mobility,by=c('county'='COUNTY'))%>%
+  filter(major_teaching%in%c('Online Only','On Premises','Hybrid'))%>%
+  group_by(DATE, major_teaching) %>%
+  summarise(total_deaths = sum(CUMDEATHS),
+            total_pop = sum(POPULATION),
+            death_prop = total_deaths/total_pop,
+            full_work_prop = sum(full_work_prop_7d*POPULATION)/sum(POPULATION),
+            part_work_prop = sum(part_work_prop_7d*POPULATION)/sum(POPULATION),
+            res_visit_prop = sum(res_visit_by_pop),
+            bar_visit_prop = sum(bar_visit_by_pop),
+            .groups = "drop") %>%
+  ggplot(aes(x = DATE, y = death_prop*1000, group = major_teaching))+
+  geom_rect(data=case_policy_wide[1,],
+            aes(xmin=as.Date("2020/08/18"), xmax=as.Date("2020/12/12"),
+                ymin=-Inf,ymax=Inf),
+            color = NA,alpha=0.2, show.legend = F, fill = "orange") + 
+  geom_point(aes(size=full_work_prop,color = major_teaching),alpha = .1) + 
+  geom_vline(xintercept = date.intercept, linetype = "dashed") + 
+  annotate("text",x = date.intercept,y = 1.5,
+           label = date.intercept,
+           hjust = 1.1) + 
+  theme_bw() + 
+  labs(x = "Date", y = "Cumulative Death Incidence / 1,000 people",
+       color = "Majority Teaching Method") + 
+  theme(legend.position = "bottom")+theme(legend.title = element_text(size=13),legend.text = element_text(size=13),axis.title = element_text(size=15),axis.text = element_text(size=15),legend.background = element_rect(fill = alpha("orange",0.0)),legend.key.size = unit(1.4,"lines"),title = element_text(size=12.9))
+```
+
+
