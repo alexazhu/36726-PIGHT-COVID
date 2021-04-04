@@ -34,7 +34,7 @@ case_policy_wide%>%
             .groups = "drop") %>%
   ggplot(aes(x = DATE, y = death_prop*1000, group = major_teaching))+
   geom_rect(data=case_policy_wide[1,],
-            aes(xmin=as.Date("2020/08/26"), xmax=as.Date("2020/12/12"),
+            aes(xmin=as.Date("2020/08/18"), xmax=as.Date("2020/12/12"),
                 ymin=-Inf,ymax=Inf),
             color = NA,alpha=0.2, show.legend = F, fill = "orange") + 
   geom_line(aes(color = major_teaching),size = 1, alpha = .8) + 
@@ -44,11 +44,15 @@ case_policy_wide%>%
   geom_vline(xintercept = date.intercept, linetype = "dashed") + 
   annotate("text",x = date.intercept,y = 1.5,
            label = date.intercept,
-           hjust = 1.1) + 
+           hjust = 1.1,size=5) + 
   theme_bw() + 
   labs(x = "Date", y = "Cumulative Death Incidence / 1,000 people",
-       color = "Majority Teaching \nMethod") + 
-  theme(legend.position = "bottom")
+       color = "Majority Teaching Method") + 
+  theme(legend.position = "")+
+  theme(axis.title = element_text(size=16),axis.text = element_text(size=15))
+  #theme(legend.position = "bottom")+
+  #theme(legend.title = element_text(size=13),legend.text = element_text(size=13),legend.background = element_rect(fill = alpha("orange",0.0)),legend.key.size = unit(1.4,"lines"),title = element_text(size=12.9))
+
 
 #ggsave("totaldeath.jpg", width = 5,height = 5)
 
@@ -204,3 +208,13 @@ ggplot(lag_cases,aes(x = DATE, y = death_prop_inc*1000,
        color = "Majority Teaching Method") + 
   scale_y_continuous(labels = comma) + 
   theme(legend.position = "bottom")
+
+
+
+# create map plots
+wide_teaching_enroll%>%
+  left_join(ohio_map,by='county')%>%
+  mutate(Online_Only= Online_Only*100)%>%
+  ggplot() + geom_polygon(aes(x = long, y = lat, group = group, fill = Online_Only), color = "gray") + coord_fixed(1.3) + theme_map() +
+  scale_fill_distiller(palette = "Spectral")+labs(fill='% Online Only')+
+  geom_text_repel(data=centroids2,aes(x = clong, y = clat,label=county), color = "black",size = 3)

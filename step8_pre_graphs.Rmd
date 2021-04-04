@@ -9,7 +9,7 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 source("step2_data_wrangle.R")
 ```
 
@@ -339,5 +339,139 @@ ggplot(lag_cases,aes(x = DATE, y = death_prop_inc*1000,
 ```
 
 
+```{r}
+library(ggrepel)
+library(cowplot)
+library(sp)
+ohio_map <- map_data("county") %>%subset(region=="ohio")%>%
+  mutate(county=toupper(subregion))%>%select(long,lat,county,group)
 
 
+getLabelPoint <- # Returns a county-named list of label points
+function(county) {Polygon(county[c('long', 'lat')])@labpt}
+centroids = by(ohio_map, ohio_map$county, getLabelPoint)     # Returns list
+centroids2 <- do.call("rbind.data.frame", centroids)  # Convert to Data Frame
+centroids2$county = str_to_title(rownames(centroids))
+names(centroids2) <- c('clong', 'clat', "county")                 # Appropriate Header
+```
+
+
+```{r}
+# create map plots
+wide_teaching_enroll%>%
+  left_join(ohio_map,by='county')%>%
+  mutate(Online_Only= Online_Only*100)%>%
+  ggplot() + geom_polygon(aes(x = long, y = lat, group = group, fill = Online_Only), color = "gray") + coord_fixed(1.3) + theme_map() +
+scale_fill_distiller(palette = "OrRd",direction = 1)+labs(fill='% Online Only')+theme(legend.text = element_text(size=20),legend.title = element_text(size=20))
+
+
+
+# create map plots
+wide_teaching_enroll%>%
+  left_join(ohio_map,by='county')%>%
+  mutate(On_Premises= On_Premises*100)%>%
+  ggplot() + geom_polygon(aes(x = long, y = lat, group = group, fill = On_Premises), color = "gray") + coord_fixed(1.3) + theme_map() +
+scale_fill_distiller(palette = "OrRd",direction = 1)+labs(fill='% On Premises')+theme(legend.text = element_text(size=20),legend.title = element_text(size=20))
+
+
+# create map plots for population
+wide_teaching_enroll%>%
+  left_join(ohio_map,by='county')%>%
+  mutate(Hybrid= Hybrid*100)%>%
+  ggplot() + geom_polygon(aes(x = long, y = lat, group = group, fill = Hybrid), color = "gray") + coord_fixed(1.3) + theme_map() +
+scale_fill_distiller(palette = "OrRd",direction = 1)+labs(fill='% Hybrid')+theme(legend.text = element_text(size=20),legend.title = element_text(size=20))
+
+
+
+# create map plots
+cases%>%
+  distinct(COUNTY,POPULATION)%>%
+  left_join(ohio_map,by=c('COUNTY'='county'))%>%
+  mutate(population = POPULATION/1000)%>%
+  ggplot() + geom_polygon(aes(x = long, y = lat, group = group, fill = population), color = "gray") + coord_fixed(1.3) + theme_map() +
+scale_fill_distiller(palette = "OrRd",direction = 1)+labs(fill='Population/1000')+theme(legend.text = element_text(size=12),legend.title = element_text(size=12),legend.position = "bottom",legend.key.size = unit(2,"lines"))
+
+# create map plots
+teachingmethod_enroll%>%
+  distinct(county,county_enroll)%>%
+  left_join(ohio_map,by=c('county'))%>%
+  mutate(county_enroll = county_enroll/1000)%>%
+  ggplot() + geom_polygon(aes(x = long, y = lat, group = group, fill = county_enroll), color = "gray") + coord_fixed(1.3) + theme_map() +
+scale_fill_distiller(palette = "OrRd",direction = 1)+labs(fill='Enrollment/1000')+theme(legend.text = element_text(size=12),legend.title = element_text(size=12),legend.position = "bottom",legend.key.size = unit(2,"lines"))
+
+```
+
+```{r}
+
+date.intercept
+
+# aggregate daily mobility at state level 
+date_mobility <- case_mobility%>%
+  left_join(wide_teaching_enroll,by=c('COUNTY'='county'))%>%
+  drop_na(major_teaching)%>%
+  group_by(DATE,major_teaching)%>%
+  summarise(full_work_prop = sum(full_work_prop_7d*POPULATION)/sum(POPULATION),
+            part_work_prop = sum(part_work_prop_7d*POPULATION)/sum(POPULATION),
+            res_visit_prop = sum(res_visit_by_pop),
+            bar_visit_prop = sum(bar_visit_by_pop))
+
+# reorder the level 
+date_mobility$major_teaching <- factor(date_mobility$major_teaching,
+                                            levels = c("On Premises",
+                                                       "Hybrid",
+                                                       "Online Only"))
+# FULL TIME WORK, 6 hours +
+date_mobility%>%
+  ggplot(aes(x=DATE,y=full_work_prop))+
+  geom_rect(data=date_mobility[1,],
+            aes(xmin=as.Date("2020/08/26"), xmax=as.Date("2020/12/12"),
+                ymin=-Inf,ymax=Inf),
+            color = NA,alpha=0.2, show.legend = F, fill = "orange") + 
+  geom_line(aes(color = major_teaching),size = 1, alpha = .8)+
+  geom_vline(xintercept = date.intercept, linetype = "dashed") + 
+  annotate("text",x = date.intercept,y = 0.1,
+           label = date.intercept,
+           hjust = 1.1) + 
+  theme_bw() + 
+  labs(x = "Date", y = "% Devices in population",subtitle = "Average over 7 days",
+       color = "Majority Teaching Method",title = "Percentage of Devices Away Home for 6hr+") +
+  theme(legend.position = "bottom")+theme(legend.title = element_text(size=13),legend.text = element_text(size=13),axis.title = element_text(size=15),axis.text = element_text(size=15),legend.background = element_rect(fill = alpha("orange",0.0)),legend.key.size = unit(1.4,"lines"),title = element_text(size=12.9))
+
+```
+
+```{r}
+date_mobility%>%
+  ggplot(aes(x=DATE,y=part_work_prop))+
+  geom_rect(data=date_mobility[1,],
+            aes(xmin=as.Date("2020/08/26"), xmax=as.Date("2020/12/12"),
+                ymin=-Inf,ymax=Inf),
+            color = NA,alpha=0.2, show.legend = F, fill = "orange") + 
+  geom_line(aes(color = major_teaching),size = 1, alpha = .8)+
+  geom_vline(xintercept = date.intercept, linetype = "dashed") + 
+  annotate("text",x = date.intercept,y = 0.1,
+           label = date.intercept,
+           hjust = 1.1) + 
+  theme_bw() + 
+  labs(x = "Date", y = "% Devices in population",subtitle = "Average over 7 days",
+       color = "Majority Teaching Method",title = "Percentage of Devices Away Home for 3-6hr") +
+  theme(legend.position = "bottom")+theme(legend.title = element_text(size=13),legend.text = element_text(size=13),axis.title = element_text(size=15),axis.text = element_text(size=15),legend.background = element_rect(fill = alpha("orange",0.0)),legend.key.size = unit(1.4,"lines"),title = element_text(size=12.9))
+```
+
+
+```{r}
+date_mobility%>%
+  ggplot(aes(x=DATE,y=res_visit_prop))+
+  geom_rect(data=date_mobility[1,],
+            aes(xmin=as.Date("2020/08/26"), xmax=as.Date("2020/12/12"),
+                ymin=-Inf,ymax=Inf),
+            color = NA,alpha=0.2, show.legend = F, fill = "orange") + 
+  geom_line(aes(color = major_teaching),size = 1, alpha = .8)+
+  geom_vline(xintercept = date.intercept, linetype = "dashed") + 
+  annotate("text",x = date.intercept,y = 0.1,
+           label = date.intercept,
+           hjust = 1.1) + 
+  theme_bw() + 
+  labs(x = "Date", y = "Number of Restaurant Visit",subtitle = "Average over 7 days, no data for Hybrid counties",
+       color = "Majority Teaching Method",title = "Number of Restaurant Visit Normalized by Population") +
+  theme(legend.position = "bottom")+theme(legend.title = element_text(size=13),legend.text = element_text(size=13),axis.title = element_text(size=15),axis.text = element_text(size=15),legend.background = element_rect(fill = alpha("orange",0.0)),legend.key.size = unit(1.4,"lines"),title = element_text(size=12.9))
+```

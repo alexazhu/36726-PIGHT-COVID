@@ -154,6 +154,49 @@ fulltime_work <- suppressMessages(
                    geo_type = "county", geo_values = c("39001", "39003", "39005", "39007", "39009", "39011", "39013", "39015", "39017", "39019", "39021", "39023", "39025", "39027", "39029", "39031", "39033", "39035", "39037", "39039", "39041", "39043", "39045", "39047", "39049", "39051", "39053", "39055", "39057", "39059", "39061", "39063", "39065", "39067", "39069", "39071", "39073", "39075", "39077", "39079", "39081", "39083", "39085", "39087", "39089", "39091", "39093", "39095", "39097", "39099", "39101", "39103", "39105", "39107", "39109", "39111", "39113", "39115", "39117", "39119", "39121", "39123", "39125", "39127", "39129", "39131", "39133", "39135", "39137", "39139", "39141", "39143", "39145", "39147", "39149", "39151", "39153", "39155", "39157", "39159", "39161", "39163", "39165", "39167", "39169", "39171", "39173", "39175"))
 )
 
+<<<<<<< HEAD
+=======
+restaurant <- suppressMessages(
+  covidcast_signal(data_source = "safegraph", signal = "restaurants_visit_prop",
+                   start_day = "2020-01-22", end_day = "2021-02-22",
+                   geo_type = "county", geo_values = c("39001", "39003", "39005", "39007", "39009", "39011", "39013", "39015", "39017", "39019", "39021", "39023", "39025", "39027", "39029", "39031", "39033", "39035", "39037", "39039", "39041", "39043", "39045", "39047", "39049", "39051", "39053", "39055", "39057", "39059", "39061", "39063", "39065", "39067", "39069", "39071", "39073", "39075", "39077", "39079", "39081", "39083", "39085", "39087", "39089", "39091", "39093", "39095", "39097", "39099", "39101", "39103", "39105", "39107", "39109", "39111", "39113", "39115", "39117", "39119", "39121", "39123", "39125", "39127", "39129", "39131", "39133", "39135", "39137", "39139", "39141", "39143", "39145", "39147", "39149", "39151", "39153", "39155", "39157", "39159", "39161", "39163", "39165", "39167", "39169", "39171", "39173", "39175"))
+)
+
+bar <- suppressMessages(
+  covidcast_signal(data_source = "safegraph", signal = "bars_visit_prop",
+                   start_day = "2020-01-22", end_day = "2021-02-22",
+                   geo_type = "county", geo_values = c("39001", "39003", "39005", "39007", "39009", "39011", "39013", "39015", "39017", "39019", "39021", "39023", "39025", "39027", "39029", "39031", "39033", "39035", "39037", "39039", "39041", "39043", "39045", "39047", "39049", "39051", "39053", "39055", "39057", "39059", "39061", "39063", "39065", "39067", "39069", "39071", "39073", "39075", "39077", "39079", "39081", "39083", "39085", "39087", "39089", "39091", "39093", "39095", "39097", "39099", "39101", "39103", "39105", "39107", "39109", "39111", "39113", "39115", "39117", "39119", "39121", "39123", "39125", "39127", "39129", "39131", "39133", "39135", "39137", "39139", "39141", "39143", "39145", "39147", "39149", "39151", "39153", "39155", "39157", "39159", "39161", "39163", "39165", "39167", "39169", "39171", "39173", "39175"))
+)
+
+mobility <- parttime_work%>%
+  rename(part_work_prop_7d=value,part_work_std = stderr,part_work_sample_size=sample_size)%>%
+  mutate(part_work_count = part_work_prop_7d*part_work_sample_size)%>%
+  left_join(fulltime_work%>%
+              rename(full_work_prop_7d=value,full_work_std = stderr,full_work_sample_size=sample_size,full_work_std = stderr)%>%
+              mutate(full_work_count = full_work_prop_7d*full_work_sample_size),by = c("geo_value","time_value"))%>%
+  left_join(restaurant%>%
+              rename(res_visit_by_pop = value),by = c("geo_value","time_value"))%>%
+  left_join(bar%>%
+              rename(bar_visit_by_pop = value),by = c("geo_value","time_value"))%>%
+  select(geo_value,time_value,part_work_count,part_work_prop_7d,part_work_sample_size,
+         full_work_count,full_work_prop_7d,full_work_sample_size,
+         res_visit_by_pop,bar_visit_by_pop)
+
+write.csv(mobility,"mobility.csv")
+
+case_mobility <- mobility%>%
+  right_join(cases,by=c("geo_value"="FIPS","time_value"="DATE"))%>%
+  rename(FIPS = geo_value,DATE = time_value,)
+
+write.csv(case_mobility,"case_mobility.csv")
+
+##################### get raw mobility data ########################
+library(covidcast)
+
+
+
+
+>>>>>>> e9cc8a62cc91f1c9016a7bb81078d2fd8707dc22
 restaurant <- suppressMessages(
   covidcast_signal(data_source = "safegraph", signal = "restaurants_visit_prop",
                    start_day = "2020-01-22", end_day = "2021-02-22",
@@ -174,9 +217,15 @@ mobility <- parttime_work%>%
   left_join(restaurant%>%
               rename(res_visit_by_pop = value),by = c("geo_value","time_value"))%>%
   left_join(bar%>%
+<<<<<<< HEAD
               rename(bar_visit_by_pop = value),by = c("geo_value","time_value"))%>%
   select(geo_value,time_value,part_work_prop_7d,
          full_work_prop_7d,res_visit_by_pop,bar_visit_by_pop)
+=======
+              rename(bar_visit_prop = value)%>%
+              select(-stderr,-sample_size),by = c("geo_value","time_value"))%>%
+  select(geo_value,time_value,work_prop_7d,work_std,work_sample_size,res_visit_prop,bar_visit_prop)
+>>>>>>> e9cc8a62cc91f1c9016a7bb81078d2fd8707dc22
 
 write.csv(mobility,"mobility.csv")
 
@@ -185,8 +234,11 @@ case_mobility <- mobility%>%
   rename(FIPS = geo_value,DATE = time_value,)%>%
   mutate(full_work_count = full_work_prop_7d*POPULATION,part_work_count = part_work_prop_7d*POPULATION)
 
+<<<<<<< HEAD
 write.csv(case_mobility,"case_mobility.csv")
 
+=======
+>>>>>>> e9cc8a62cc91f1c9016a7bb81078d2fd8707dc22
 
 ##################### calculate death prop ########################
 
