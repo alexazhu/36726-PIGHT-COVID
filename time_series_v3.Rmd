@@ -1,0 +1,428 @@
+---
+title: "Time series analysis with updated window definition"
+author: "Cheyenne Ehman, Ziyan Zhu"
+date: "3/29/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Select varible of interests
+
+```{r}
+## If you don't have the covidcast package, run following line
+
+#devtools::install_github("cmu-delphi/covidcast", ref = "main", subdir = "R-packages/covidcast",dependencies = T)
+```
+
+
+
+```{r message=FALSE, warning=FALSE}
+source("step2_data_wrangle.R")
+################### school reopen dates ################### 
+district_policies <- OH_K12 %>%
+  distinct(county,county_enroll,leaid,district_enroll,schooltemporaryshutdown,opendategrouped,teachingmethod)
+# Calculate the proportion and generate date brackets
+prop_opendate <- district_policies%>%
+  filter(!schooltemporaryshutdown %in% c('Closed indefinitely','Pending','Unknown'))%>%
+  group_by(county,county_enroll,opendategrouped)%>%
+  summarise(n_opendate = sum(district_enroll))%>% # number of students under certain date for each county
+  mutate(prop_opendate = round(n_opendate/county_enroll,2))%>% # proportion
+  group_by(county)%>%
+  #filter(prop_opendate>0.6)%>% 
+  slice(which.max(prop_opendate))%>% # filter large proportions of students with same reopen dates #can be replaced with # slice(which.max(prop_opendate))#
+  mutate(threeweeks_lag_open = opendategrouped+21,sixweeks_lag_open = opendategrouped+42,twomonths_lag_open = opendategrouped+63,beforechristmas = as.Date("2020-12-15"))%>%
+  select(-n_opendate)
+```
+
+```{r}
+opendate_cases <- case_mobility%>%
+  inner_join(prop_opendate,by=c('COUNTY'='county'))%>%
+  group_by(COUNTY)%>%
+  filter(DATE>=opendategrouped & DATE<=beforechristmas)%>%
+  mutate(window_id = case_when(DATE<threeweeks_lag_open~"fall_reopento21d",
+    DATE>=threeweeks_lag_open & DATE<sixweeks_lag_open~'reopen_21dto42d',
+    DATE>= sixweeks_lag_open & DATE<twomonths_lag_open ~ 'reopen_42dto63d',
+    TRUE ~ 'before_christmas'
+  ))%>%
+  mutate(death_prop = round(CUMDEATHS/POPULATION,5),
+         window_id = as.factor(window_id))%>%
+  left_join(wide_teaching_enroll,by=c('COUNTY'='county','county_enroll'))
+# select the start date and end date data for each window of time
+  
+start_of_window <- opendate_cases%>%
+  group_by(COUNTY,window_id)%>%
+  arrange(DATE)%>%
+  filter(row_number()==1)%>%
+  ungroup()%>%
+  mutate(y_label = case_when(window_id == "fall_reopento21d"~'before reopen',
+    window_id == "reopen_21dto42d" ~ 'Fall reopen',
+    window_id == "reopen_42dto63d" ~ '3 weeks after reopen',
+    window_id == "before_christmas" ~ '6 weeks after reopen'
+  ))%>%
+  select(-opendategrouped,-threeweeks_lag_open,-sixweeks_lag_open,-twomonths_lag_open,-beforechristmas,-window_id)
+  
+```
+
+```{r message=FALSE, warning=FALSE}
+start_of_window$y_label <- factor(start_of_window$y_label,
+         levels = c("before reopen",
+         "Fall reopen",
+         "3 weeks after reopen",
+         "6 weeks after reopen"))
+
+start_of_window$major_teaching <- factor(start_of_window$major_teaching,
+         levels = c("On Premises",
+         "Hybrid",
+         "Online Only"))
+
+start_of_window %>%
+  ggplot(aes(y = death_prop, 
+             fill = major_teaching))+ 
+  geom_boxplot(na.rm = T) +
+  facet_grid(~y_label)+ 
+  theme_bw()+ 
+  labs(y = "Death Proportion",
+       fill = "Majority Teaching Method",
+       title = "Death Proportion")+theme(legend.position = "bottom")
+
+#ggsave("Deathprop_box.jpg", width = 8.5, height = 5)
+
+require(scales)
+start_of_window %>%
+  group_by(COUNTY)%>%
+  mutate(death_inc = CUMDEATHS-lag(CUMDEATHS))%>%
+  drop_na(death_inc)%>%
+  mutate(death_prop_inc = round(death_inc/POPULATION,6))%>%
+  ggplot(aes(y = death_prop_inc, 
+             fill = major_teaching))+ 
+  geom_boxplot(na.rm = T) +
+  theme_bw()+ 
+  labs(y = "Death Proportion",
+       fill = "Majority Teaching Method",
+       title = "Death Proportion Increase") + 
+  facet_grid(~y_label)+
+  scale_y_continuous(labels = comma)
+#ggsave("Deathpropinc_box.jpg", width = 8.5, height = 5)
+```
+
+```{r}
+start_of_window %>%
+  group_by(COUNTY)%>%
+  mutate(death_inc = CUMDEATHS-lag(CUMDEATHS))%>%
+  drop_na(death_inc)%>%
+  mutate(death_prop_inc = round(death_inc/POPULATION,6))%>%
+  filter(y_label == "6 weeks after reopen") %>%
+  ggplot(aes(x = Online_Only, y = death_prop_inc, color = major_teaching)) + 
+  geom_point()+ 
+  theme_bw() + 
+  labs(x = "Proportion of Students learning Remote",
+       y = "Death Proportion Increase",
+       title = "Y1-Y0 against X1",
+       subtitle = "increase during 3-6 weeks of reopen",
+       color = "Majority Teaching Method")
+
+#ggsave("y1x1.jpg", width = 7, height = 5)
+```
+
+
+```{r}
+county_policy_wide$major_teaching <- factor(county_policy_wide$major_teaching,
+         levels = c("On Premises",
+         "Hybrid",
+         "Online Only"))
+# see when the intesection happens
+date.intercept <- as.Date("2020-11-24")
+
+# add 95% confidence bans
+confidence_level <- .95
+z_cl <- qnorm(confidence_level)
+
+# case_policy_wide
+case_policy_wide <- case_mobility %>%
+  left_join(county_policy_wide[,c("county","major_teaching","Online_Only","Hybrid","On_Premises")],by = c("COUNTY" = "county")) %>%
+  mutate(death_prop = CUMDEATHS/POPULATION)
+
+# plot
+case_policy_wide%>%
+  group_by(DATE, major_teaching) %>%
+  drop_na(major_teaching)%>%
+  summarise(total_deaths = sum(CUMDEATHS),
+            total_pop = sum(POPULATION),
+            death_prop = total_deaths/total_pop,
+            death_prop_upper = death_prop + z_cl*sqrt(death_prop*(1 - death_prop)/total_pop),
+            death_prop_lower = death_prop - z_cl*sqrt(death_prop*(1 - death_prop)/total_pop),
+            .groups = "drop") %>%
+  ggplot(aes(x = DATE, y = death_prop*1000, group = major_teaching))+
+    geom_rect(data=opendate_cases[1,],
+            aes(xmin=as.Date("2020/08/26"), xmax=as.Date("2020/12/12"),
+                ymin=-Inf,ymax=Inf),
+            color = NA,alpha=0.2, show.legend = F, fill = "orange") + 
+    geom_line(aes(color = major_teaching),size = 1, alpha = .8) + 
+    geom_ribbon(aes(ymin = 1000*death_prop_lower, ymax = 1000*death_prop_upper,
+                    fill= major_teaching), 
+                alpha = .3, show.legend = F)+ 
+    geom_vline(xintercept = date.intercept, linetype = "dashed") + 
+    annotate("text",x = date.intercept,y = 1.5,
+             label = date.intercept,
+             hjust = 1.1) + 
+    theme_bw() + 
+    labs(x = "Date", y = "Death Proportion / 1,000 people", 
+         title = "Cumulative Death Proportion by Teaching Method",
+         subtitle = "Yellow area represents the fall semester",
+         color = "Majority Teaching Method") + 
+  theme(legend.position = "right")
+
+# +
+#   scale_x_date(date_breaks = "2 month", date_labels = "%b-%y")
+#ggsave("totaldeath.jpg", width = 7,height = 5)
+```
+
+
+```{r}
+case_mobility%>%
+  filter(COUNTY=="HARRISON")%>%
+  mutate(death_prop = CUMDEATHS/POPULATION)%>%
+  ggplot(aes(x=DATE,y=res_visit_prop))+geom_point()+geom_smooth()+labs(x="",y="Restaurant Visits")
+
+```
+
+```{r fig.height=6, fig.width=6, message=FALSE, warning=FALSE}
+library(gridExtra)
+
+date_plot <- function(date,var,title_text){
+  p <- case_mobility%>%
+  filter(DATE == date)%>%
+  mutate(death_prop = CUMDEATHS/POPULATION)%>%
+  ggplot(aes(x= get(var),y = death_prop))+theme_minimal()+
+  labs(x=NULL,y="Death Proportion",title=paste0(date,": ",title_text))+geom_point()+geom_smooth(method='lm', formula= y~x)+theme(title = element_text(size = 9),axis.text = element_text(size=9))
+return(p)
+}
+
+p11 <- date_plot(date = '2020-09-01',var = "work_prop_7d",title_text = "3 weeks before reopen")
+  
+p12 <- date_plot(date = '2020-09-01',var = "res_visit_prop",title_text = "3 weeks before reopen")
+ 
+p13 <- date_plot(date = '2020-09-01',var = "bar_visit_prop",title_text = "3 weeks before reopen")
+
+##############################################################################
+p21 <- date_plot(date = '2020-09-22',var = "work_prop_7d",title_text = "around reopen")
+  
+p22 <- date_plot(date = '2020-09-22',var = "res_visit_prop",title_text = "around reopen")
+ 
+p23 <- date_plot(date = '2020-09-22',var = "bar_visit_prop",title_text = "around reopen")
+
+##############################################################################
+p31 <- date_plot(date = '2020-10-12',var = "work_prop_7d",title_text = "3 weeks after reopen")
+
+p32 <- date_plot(date = '2020-10-12',var = "res_visit_prop",title_text = "3 weeks after reopen")
+ 
+p33 <- date_plot(date = '2020-10-12',var = "bar_visit_prop",title_text = "3 weeks after reopen")
+
+#############################################################################
+p41 <- date_plot(date = '2020-11-03',var = "work_prop_7d",title_text = "6 weeks after reopen")
+
+p42 <- date_plot(date = '2020-11-03',var = "res_visit_prop",title_text = "6 weeks after reopen")
+ 
+p43 <- date_plot(date = '2020-11-03',var = "bar_visit_prop",title_text = "6 weeks after reopen")
+
+##############################################################################
+p51 <- date_plot(date = '2020-11-24',var = "work_prop_7d",title_text = "3 weeks before Thanksgiving")
+  
+p52 <- date_plot(date = '2020-11-24',var = "res_visit_prop",title_text = "3 weeks before Thanksgiving")
+ 
+p53 <- date_plot(date = '2020-11-24',var = "bar_visit_prop",title_text = "3 weeks before Thanksgiving")
+##############################################################################
+p61 <- date_plot(date = '2020-12-15',var = "work_prop_7d",title_text = "around Thanksgiving")
+  
+p62 <- date_plot(date = '2020-12-11',var = "res_visit_prop",title_text = "around Thanksgiving")
+ 
+p63 <- date_plot(date = '2020-12-11',var = "bar_visit_prop",title_text = "around Thanksgiving")
+
+##############################################################################
+p71 <- date_plot(date = '2021-02-22',var = "work_prop_7d",title_text = "")
+  
+p72 <- date_plot(date = '2021-02-22',var = "res_visit_prop",title_text = "")
+ 
+p73 <- date_plot(date = '2021-02-22',var = "bar_visit_prop",title_text = "")
+
+#############################################################################
+options(scipen=10000)
+grid.arrange(p11, p21, p31,p41,p51,p61,nrow = 3,ncol=2,widths = c(5,5),heights = c(3,3,3),bottom= "Fraction of devices that spent between 3 and 6 hours at work")
+
+grid.arrange(p12, p22, p32,p42,p52,p62,nrow = 3,ncol=2,widths = c(5,5),heights = c(3,3,3),bottom="Restaurant visits by population")
+
+grid.arrange(p13,p23,p33,p43,p53,p63,nrow = 3,ncol=2,widths = c(5,5),heights = c(3,3,3),bottom="Bar visits by population")
+```
+
+
+
+```{r}
+avg_work <- case_policy_wide %>%
+  drop_na(major_teaching)%>%
+  group_by(DATE, major_teaching) %>%
+  summarise(avg_ptwork_prop_7d = mean(work_prop_7d))
+
+avg_work%>%
+  ggplot(aes(x = DATE, y = avg_ptwork_prop_7d, color = major_teaching))+
+    geom_rect(data = avg_work[1,],
+            aes(xmin=as.Date("2020/08/26"), xmax=as.Date("2020/12/12")),
+                ymin=-Inf,ymax=Inf,color = NA,alpha=0.3,show.legend = F, fill = "orange") +  
+    geom_line(aes(color = major_teaching),size = 1, alpha = .8) + 
+        geom_vline(xintercept = date.intercept, linetype = "dashed") + 
+    annotate("text",x = date.intercept,y = .06,
+             label = date.intercept,
+             hjust = 1.0) + 
+    geom_vline(xintercept = as.Date('2020/11/03'), linetype = "dashed") +
+    annotate("text",x = as.Date('2020/11/03'),y = .11,
+               label =as.Date('2020/11/03'),
+               hjust = 1.1) + 
+    theme_bw() + 
+    labs(x = "Date", y = "Average Mobility Porportion", 
+         title = "Average Mobility Proportion by Teaching Method",
+         subtitle = "Red area represents the fall semester",
+         color = "Majority Teaching Method",
+         caption = "The fraction of devices that spent between 3 and 6 hours at a location other than their home during the daytime (SafeGraph’s)")+
+  theme(legend.position = "bottom")
+```
+
+```{r}
+avg_bar_visit <- case_policy_wide %>%
+  drop_na(bar_visit_prop)%>%
+  group_by(DATE, major_teaching) %>%
+  summarise(avg_bar_visit = mean(bar_visit_prop))
+
+
+avg_bar_visit%>%
+  ggplot(aes(x = DATE, y = avg_bar_visit, color = major_teaching))+
+    geom_rect(data = avg_bar_visit[1,],
+            aes(xmin=as.Date("2020/08/26"), xmax=as.Date("2020/12/12")),
+                ymin=-Inf,ymax=Inf,color = NA,alpha=0.3, show.legend = F, fill = "orange") +  
+    #geom_point(size = 2, alpha = .8)+
+    geom_smooth(size = 1, alpha = .5) + 
+    theme_bw() + 
+    labs(x = "Date", y = "Average Bar Visits", 
+         title = "Average Number of Bar Visits by Teaching Method",
+         subtitle = "Red area represents the fall semester",
+         color = "Majority Teaching Method",
+         caption = "Weekly counts of visits and normalized by population size (SafeGraph)")+
+  theme(legend.position = "bottom")
+```
+
+```{r}
+avg_res_visit <- case_policy_wide %>%
+  drop_na(res_visit_prop)%>%
+  group_by(DATE, major_teaching) %>%
+  summarise(avg_res_visit = mean(res_visit_prop))
+
+
+avg_res_visit%>%
+  drop_na(major_teaching)%>%
+  ggplot(aes(x = DATE, y = avg_res_visit, color = major_teaching))+
+    geom_rect(data = avg_res_visit[1,],
+            aes(xmin=as.Date("2020/08/26"), xmax=as.Date("2020/12/12")),
+                ymin=-Inf,ymax=Inf,color = NA,alpha=0.3, show.legend = F, fill = "orange") +  
+    #geom_point(size = 1, alpha = .8)+
+    geom_smooth(size = 1, alpha = .5) + 
+    theme_bw() + 
+    labs(x = "Date", y = "Average Bar Visits", 
+         title = "Average Number of Restaurant Visits by Teaching Method",
+         subtitle = "Red area represents the fall semester",
+         color = "Majority Teaching Method",
+         caption = "Weekly counts of visits and normalized by population size (SafeGraph)")+
+  theme(legend.position = "bottom")
+```
+
+
+## Notice
+
+After removing missing values in each of the mobility measures, we end up with different sample size for each linear regression
+
+__NOTES__:
+
+Considering the lagging deaths, if we want to know the part-time work effects on the deaths, we should fit 
+
+y1 death after 3 weeks ~ y0 death today + work_prop_7d today
+
+Check y0_label and y1_label for what window it is
+
+```{r}
+y1y0 <- start_of_window %>%
+  rename(y0_label = y_label)%>%
+  group_by(COUNTY)%>%
+  arrange(DATE)%>%
+  mutate(y0= death_prop,y1 = lead(y0,n=1))%>%
+  mutate(y1_label = lead(y0_label,n=1))%>%
+  drop_na(y1)
+
+summary(lm(y1~y0+work_prop_7d,na.action='na.omit',data = y1y0))
+summary(lm(y1~y0+res_visit_prop,na.action='na.omit',data = y1y0))
+summary(lm(y1~y0+bar_visit_prop,na.action='na.omit',data = y1y0))
+```
+
+```{r}
+summary(lm(y1~y0+Hybrid,data = y1y0))
+summary(lm(y1~y0+On_Premises,data = y1y0))
+summary(lm(y1~y0+Online_Only,data = y1y0))
+```
+
+
+
+```{r}
+summary(lm(y1~y0+work_prop_7d+On_Premises,na.action='na.omit',data = y1y0))
+```
+
+
+```{r}
+lag_cases <- case_mobility %>%
+  left_join(county_policy_wide[,c("county","major_teaching")],
+            by = c("COUNTY" = "county")) %>%
+  drop_na(major_teaching)%>%
+  select(COUNTY,DATE,CUMDEATHS,POPULATION,major_teaching)%>%
+  group_by(COUNTY) %>%
+  mutate(lag_total_deaths = lag(CUMDEATHS,21)) %>%
+  ungroup()%>%
+  group_by(DATE,major_teaching) %>%
+  summarise(total_deaths = sum(CUMDEATHS),
+            total_deaths_lag = sum(lag_total_deaths),
+            total_pop = sum(POPULATION),
+            death_prop = total_deaths/total_pop,
+            lag_death_prop = total_deaths_lag/total_pop,
+            death_prop_inc = (total_deaths-total_deaths_lag)/total_pop,
+            .groups = "drop")
+
+ggplot(lag_cases, aes(x = lag_death_prop, y = death_prop, color = major_teaching)) + 
+    geom_line(size = 1,alpha = .8, na.rm=T)+ 
+  theme_bw() + 
+  labs(x = "Death Proportion of 3 weeks prior", y  = "Death Proportion",
+       color = "Majority Teaching Method")
+```
+
+```{r}
+peak.date <- as.Date("2020-12-23")
+ggplot(lag_cases,aes(x = DATE, y = death_prop_inc, 
+                     color = major_teaching,
+                     fill = "red")) + 
+    geom_line(na.rm = T) +
+    geom_rect(data = lag_cases[1,],
+            aes(xmin=as.Date("2020/08/26"), xmax=as.Date("2020/12/12"),
+                ymin=-Inf,ymax=Inf),
+            color = NA,alpha=0.2, show.legend = F) + 
+    geom_vline(xintercept = peak.date, linetype = "dashed")+ 
+    annotate("text",x = peak.date,y = .0005,
+             label = peak.date,
+             hjust = 1.2)  + 
+  theme_bw() + 
+  labs(x = "Date",
+       y = "Death Proportion Increase", 
+       title = "Death Proportion Increase by Teaching Method",
+       subtitle = "Increase compared to 3 Week Lag \nRed area represents Fall Semester",
+       color = "Majority Teaching Method") + 
+  scale_y_continuous(labels = comma)
+```
+
+
+
