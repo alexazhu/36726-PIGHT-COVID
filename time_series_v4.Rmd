@@ -22,6 +22,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r message=FALSE, warning=FALSE}
 source("step2_data_wrangle.R")
+
 ################### school reopen dates ################### 
 district_policies <- OH_K12 %>%
   distinct(county,county_enroll,leaid,district_enroll,schooltemporaryshutdown,opendategrouped,teachingmethod)

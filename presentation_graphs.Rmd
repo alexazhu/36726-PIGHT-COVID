@@ -22,7 +22,7 @@ options(scipen=10000)
 state_open_teaching_enroll%>%
   filter(teachingmethod %in% c("On Premises","Hybrid"))%>%
   ggplot(aes(y=opendate_teaching_county_enroll/1000, x=opendate,  fill=teachingmethod)) +
-  geom_bar(,position = 'stack', stat = 'identity',width = 3) +
+  geom_bar(position = 'stack', stat = 'identity',width = 3) +
   geom_rect(data = state_open_teaching_enroll[1,],
             aes(xmin = as.Date('2020/08/26'), 
                 xmax = as.Date('2020/12/15'), ymin=-Inf, ymax=Inf), 
@@ -35,7 +35,7 @@ state_open_teaching_enroll%>%
 state_open_teaching_enroll%>%
   filter(teachingmethod %in% c("On Premises","Hybrid"))%>%
   ggplot(aes(y=opendate_teaching_state_prop, x=opendate,  fill=teachingmethod)) +
-  geom_bar(,position = 'stack', stat = 'identity',width = 3) +ylim(0,1)+
+  geom_bar(position = 'stack', stat = 'identity',width = 3)+ylim(0,1)+
   geom_rect(data = state_open_teaching_enroll[1,],
             aes(xmin = as.Date('2020/08/26'), 
                 xmax = as.Date('2020/12/15'), ymin=-Inf, ymax=Inf), 
