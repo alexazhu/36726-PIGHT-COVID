@@ -98,28 +98,28 @@ colnames(wide_staffmask_enroll)[2] <- "Not required staff"
 # majority staff mask
 wide_staffmask_enroll[,'staff_mask']<- apply(wide_staffmask_enroll[,2:3], 1, function(x){names(which.max(x))})
 
-################## open vs. reopen dates ######################
-open_reopen_enroll <- OH_K12%>%
-  distinct(county,county_enroll,district_enroll,leaid,date)%>%
-  group_by(county,date)%>%
-  summarise(date_enroll = sum(district_enroll))%>%
-  left_join(OH_K12%>%
-              distinct(county,county_enroll,district_enroll,leaid,opendategrouped)%>%
-              group_by(county,opendategrouped)%>%
-              summarise(reopen_enroll = sum(district_enroll)), by = 'county' )
+################## school reopen date 'date' ######################
+# not sure how opendategrouped is generated, lets use original 'date' 
+# we notice that all school's in the same district have same reopen date
 
-reopen_teaching_enroll <- OH_K12%>%
-  filter(teachingmethod%in%c('Online Only','On Premises','Hybrid'))%>%
-  distinct(county,county_enroll,district_enroll,leaid,opendategrouped,teachingmethod)%>%
-  group_by(county,opendategrouped,teachingmethod)%>%
-  summarise(reopen_prop = sum(district_enroll/county_enroll))
+state_enroll <- OH_K12%>%
+  distinct(county,county_enroll)%>%
+  summarise(state_enroll=sum(county_enroll))
 
-reopen_teaching_enroll%>%
-  group_by(county,teachingmethod)%>%
-  mutate(teaching_prop = sum(reopen_prop))%>%
-  group_by(county)%>%
-  slice(which.max(teaching_prop))%>%
-  ggplot(aes(x = opendategrouped,fill= teachingmethod))+facet_wrap(~teachingmethod)+geom_bar(stat = "count")+theme_minimal()+theme(axis.text = element_text(size = 10),title=element_text(size=13),legend.text = element_text(size=13))
+state_open_teaching_enroll <- OH_K12%>%
+  mutate(state_enroll)%>%
+  group_by(teachingmethod,date,state_enroll)%>%
+  summarise(opendate_teaching_county_enroll = sum(district_enroll))%>%
+  mutate(opendate = as.Date(date),opendate_teaching_state_prop = opendate_teaching_county_enroll/state_enroll)%>%
+  select(-date)%>%
+  distinct()
+
+county_open_teaching_enroll <- OH_K12%>%
+  distinct(county,leaid,teachingmethod,county_enroll,district_enroll,date)%>%
+  group_by(county,date,teachingmethod)%>%
+  summarise(open_county_enroll = sum(district_enroll),opendate_teaching_county_prop = sum(district_enroll)/county_enroll)%>%
+  rename(opendate = date)
+
 
 ################## OH CASES ######################
 
