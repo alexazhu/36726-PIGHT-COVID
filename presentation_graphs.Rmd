@@ -121,7 +121,7 @@ state_open_teaching_enroll%>%
   ggplot(aes(y=opendate_teaching_state_prop, x=opendate,  fill=teachingmethod)) +
   geom_bar(position = 'stack', stat = 'identity',width = 3)+ylim(0,1)+
   geom_rect(data = state_open_teaching_enroll[1,],
-            aes(xmin = as.Date('2020/08/26'), 
+            aes(xmin = as.Date('2020/08/18'), 
                 xmax = as.Date('2020/12/15'), ymin=-Inf, ymax=Inf), 
             color = NA, alpha = 0.2, show.legend = F, fill = 'orange') +
   labs(x='School Reopen Date',y = 'County Student Propotion',title = 'Percentage of Student on Different School Reopen Dates \n(On Premises & Hybrid)',col="",fill="Majority Teaching Method")+ xlim(as.Date('2020/08/01'),as.Date('2021/01/01'))+
