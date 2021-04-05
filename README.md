@@ -41,10 +41,13 @@
 
 ### Significant Difference in Averaged Death Proportions among counties
 
+
 ![teaching difference](https://github.com/alexazhu/36726-PIGHT-COVID/blob/1f7f1b266ffb68fe20fe465aa7d576b5bb345a20/Presentation%20Slides/4.png)
+
 
 ### Confounding Effects
 
-![confounding effects](https://github.com/alexazhu/36726-PIGHT-COVID/blob/1f7f1b266ffb68fe20fe465aa7d576b5bb345a20/Presentation%20Slides/5.png)
+![confounding effects](https://github.com/alexazhu/36726-PIGHT-COVID/blob/71630ddd0e8f76383aa62989c290da94c13efceb/Presentation%20Slides/5.png)
+
 
 ![y0](https://github.com/alexazhu/36726-PIGHT-COVID/blob/1f7f1b266ffb68fe20fe465aa7d576b5bb345a20/Presentation%20Slides/6.png)
