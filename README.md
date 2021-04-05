@@ -14,4 +14,4 @@
 - 1,615,134 student enrolled in K12 schools (13.7% of population)
 - 2,871 schools
 
-![Data Relation](Presentation Slides/1.png)
+![Data Relation](/Presentation Slides/1.png)
