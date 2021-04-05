@@ -70,7 +70,8 @@ death_incidence_window <- opendate_deaths%>%
 
 ```
 
-
+Please refer to step2 file or CMU DELPHI website if you have questions about 
+what do the mobility data mean
 ```{r}
 y1y0 <- death_incidence_window %>%
   filter(window_id!='Other')%>%
