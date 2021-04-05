@@ -1,6 +1,6 @@
 ---
 title: "Time series analysis with updated window definition"
-author: "Cheyenne Ehman, Ziyan Zhu"
+author: "Cheyenne Ehman"
 date: "3/29/2021"
 output: pdf_document
 ---
@@ -172,29 +172,6 @@ chart.Correlation(data.frame(y1=y1y0$y1,
                              Work=y1y0$avg_work_7d,
                              Restaurant=y1y0$avg_res_visit,
                              Log_Pop=log(y1y0$POPULATION)))
-```
-
-
-
-
-```{r}
-#Create an empty Date dataframe
-all_date <- seq(as.Date("2020/8/1"), as.Date("2021/1/1"), by = 'day')
-zero <- seq(0,0,length.out=154)
-df <- data.frame(opendategrouped = all_date, zero = zero)
-enrol_district <- OH_K12 %>%
-  distinct(districtname, district_enroll, opendategrouped, teachingmethod) %>%
-  group_by(opendategrouped, teachingmethod) %>%
-  summarise(district_enroll = sum(district_enroll),.groups = 'drop') %>%
-  filter(teachingmethod %in% c('On Premises','Hybrid'))
-```
-
-```{r}
-enrol_district <- left_join(df, enrol_district, by = 'opendategrouped')
-```
-
-```{r}
-enrol_district[is.na(enrol_district)] <- 0
 ```
 
 ```{r}

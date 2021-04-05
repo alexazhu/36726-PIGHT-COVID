@@ -63,10 +63,10 @@ opendate_deaths <- case_mobility%>%
 death_incidence_window <- opendate_deaths%>%
   group_by(COUNTY,window_id)%>%
   arrange(DATE)%>%
-  mutate(avg_work_7d = mean(work_prop_7d,na.rm = T), avg_res_visit = mean(res_visit_prop,na.rm = T),avg_bar_visit = mean(bar_visit_prop,na.rm = T) )%>%
+  mutate(avg_full_work = mean(full_work_prop_7d,na.rm = T),avg_part_work =mean(part_work_prop_7d,na.rm = T),avg_res_visit = mean(res_visit_by_pop,na.rm = T),avg_bar_visit = mean(bar_visit_by_pop,na.rm = T))%>%
   filter(row_number()==1 | row_number()==n())%>%
   mutate(death_incidence = diff(CUMDEATHS),death_incidence_per_1000 = diff(CUMDEATHS)*1000/POPULATION)%>%
-  distinct(COUNTY,POPULATION,avg_work_7d,avg_res_visit,avg_bar_visit,Online_Only,On_Premises,Hybrid,major_teaching,death_incidence,death_incidence_per_1000,window_id)
+  distinct(COUNTY,POPULATION,avg_full_work,avg_part_work,avg_res_visit,avg_bar_visit,Online_Only,On_Premises,Hybrid,major_teaching,death_incidence,death_incidence_per_1000,window_id)
 
 ```
 
@@ -83,23 +83,29 @@ hist(y1y0$y0,main = "Histogram of Death Incidents per 1000", xlab = "y0")
 
 summary(lm(y1~y0,na.action='na.omit',data = y1y0))
 summary(lm(y1~POPULATION,na.action='na.omit',data = y1y0))
-summary(lm(y1~avg_work_7d,na.action='na.omit',data = y1y0))
+summary(lm(y1~avg_full_work,na.action='na.omit',data = y1y0))
+summary(lm(y1~avg_part_work,na.action='na.omit',data = y1y0))
 
-summary(lm(y1~y0+avg_work_7d,na.action='na.omit',data = y1y0))
+summary(lm(y1~y0+avg_full_work,na.action='na.omit',data = y1y0))
+summary(lm(y1~y0+avg_part_work,na.action='na.omit',data = y1y0))
+
+summary(lm(y1~y0+avg_full_work+avg_part_work,na.action='na.omit',data = y1y0))
+
 summary(lm(y1~y0+avg_res_visit,na.action='na.omit',data = y1y0))
 summary(lm(y1~y0+avg_bar_visit,na.action='na.omit',data = y1y0))
+```
 
-
+```{r}
 summary(lm(y1~y0+Hybrid,data = y1y0))
 summary(lm(y1~y0+On_Premises,data = y1y0))
 summary(lm(y1~y0+Online_Only,data = y1y0))
 ```
 
 
+
 ```{r}
 summary(lm(y1~y0+Online_Only+On_Premises,data = y1y0))
-
-summary(lm(y1~y0+avg_work_7d+On_Premises,data = y1y0))
+summary(lm(y1~y0+avg_full_work+On_Premises,data = y1y0))
 ```
 
 
@@ -123,10 +129,10 @@ opendate_cases <- case_mobility%>%
 incidence_window <- opendate_cases%>%
   group_by(COUNTY,window_id)%>%
   arrange(DATE)%>%
-  mutate(avg_work_7d = mean(work_prop_7d,na.rm = T), avg_res_visit = mean(res_visit_prop,na.rm = T),avg_bar_visit = mean(bar_visit_prop,na.rm = T) )%>%
+  mutate(avg_full_work = mean(full_work_prop_7d,na.rm = T),avg_part_work =mean(part_work_prop_7d,na.rm = T) ,avg_res_visit = mean(res_visit_by_pop,na.rm = T),avg_bar_visit = mean(bar_visit_by_pop,na.rm = T))%>%
   filter(row_number()==1 | row_number()==n())%>%
   mutate(incidence = diff(CUMCONFIRMED),incidence_per_1000 = diff(CUMCONFIRMED)*1000/POPULATION)%>%
-  distinct(COUNTY,POPULATION,avg_work_7d,avg_res_visit,avg_bar_visit,Online_Only,On_Premises,Hybrid,major_teaching,incidence,incidence_per_1000,window_id)
+  distinct(COUNTY,POPULATION,avg_full_work,avg_part_work,avg_res_visit,avg_bar_visit,Online_Only,On_Premises,Hybrid,major_teaching,incidence,incidence_per_1000,window_id)
 ```
 
 
@@ -143,9 +149,15 @@ hist(y1y0$y0,main = "Histogram of log Case Incidence per 1000", xlab = "y0")
 
 summary(lm(y1~y0,na.action='na.omit',data = logy1y0))
 summary(lm(y1~POPULATION,na.action='na.omit',data = logy1y0))
-summary(lm(y1~avg_work_7d,na.action='na.omit',data = logy1y0))
+summary(lm(y1~avg_full_work ,na.action='na.omit',data = logy1y0))
+summary(lm(y1~avg_part_work ,na.action='na.omit',data = logy1y0))
 
-summary(lm(y1~y0+avg_work_7d,na.action='na.omit',data = logy1y0))
+# correlation unclear
+summary(lm(y1~avg_full_work+avg_part_work ,na.action='na.omit',data = logy1y0))
+
+
+summary(lm(y1~y0+avg_full_work ,na.action='na.omit',data = logy1y0))
+summary(lm(y1~y0+avg_part_work ,na.action='na.omit',data = logy1y0))
 summary(lm(y1~y0+avg_res_visit,na.action='na.omit',data = logy1y0))
 summary(lm(y1~y0+avg_bar_visit,na.action='na.omit',data = logy1y0))
 
@@ -170,9 +182,9 @@ hist(y1y0$y0,main = "Histogram of log Case Incidence per 1000", xlab = "y0")
 
 summary(lm(y1~y0,na.action='na.omit',data = y1y0))
 summary(lm(y1~POPULATION,na.action='na.omit',data = y1y0))
-summary(lm(y1~avg_work_7d,na.action='na.omit',data = y1y0))
+summary(lm(y1~avg_full_work ,na.action='na.omit',data = y1y0))
 
-summary(lm(y1~y0+avg_work_7d,na.action='na.omit',data = y1y0))
+summary(lm(y1~y0+avg_full_work ,na.action='na.omit',data = y1y0))
 summary(lm(y1~y0+avg_res_visit,na.action='na.omit',data = y1y0))
 summary(lm(y1~y0+avg_bar_visit,na.action='na.omit',data = y1y0))
 
@@ -188,7 +200,7 @@ summary(lm(y1~y0+Online_Only,data = y1y0))
 ```{r}
 
 summary(lm(y1~y0+major_teaching,na.action='na.omit',data = y1y0))
-summary(lm(y1~y0+avg_work_7d+On_Premises,na.action='na.omit',data = y1y0))
+summary(lm(y1~y0+avg_full_work+On_Premises,na.action='na.omit',data = y1y0))
 
 ```
 
