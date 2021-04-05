@@ -1,5 +1,14 @@
-# Goal Overview
+Author: CMU MSP TEAM Ziyan Zhu
 
+# Introduction
+
+
+
+## What's the motivation behind exploring how school policies affects COVID transmission?
+- We're close to the 2021 Fall, should we reopen or not? What should we do next time when padenmic hits?
+- 
+
+![Why schools](![Data Relation](https://github.com/alexazhu/36726-PIGHT-COVID/blob/1f7f1b266ffb68fe20fe465aa7d576b5bb345a20/Presentation%20Slides/2.png)
 
 
 # DATA OVERVIEW
@@ -21,4 +30,4 @@
 
 ## Why We Choose Ohio State for Analysis?
 
-![Why ohio](![Data Relation](https://github.com/alexazhu/36726-PIGHT-COVID/blob/1f7f1b266ffb68fe20fe465aa7d576b5bb345a20/Presentation%20Slides/3.png))
+![Why ohio](![Data Relation](https://github.com/alexazhu/36726-PIGHT-COVID/blob/1f7f1b266ffb68fe20fe465aa7d576b5bb345a20/Presentation%20Slides/3.png)
