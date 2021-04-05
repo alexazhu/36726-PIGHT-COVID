@@ -5,10 +5,11 @@ Author: CMU MSP TEAM
 
 
 ## What's the motivation behind exploring how school policies affects COVID transmission?
-- We're close to the 2021 Fall, should we reopen or not? What should we do next time when padenmic hits?
-- 
+- We observed that percent of young people getting infected has peaked around the start of 2020 Fall Semester.
+- We're close to the 2021 Fall, should we reopen or not? 
+- What should we do next time if another pandenmic hits?
 
-![Why schools](![Data Relation](https://github.com/alexazhu/36726-PIGHT-COVID/blob/1f7f1b266ffb68fe20fe465aa7d576b5bb345a20/Presentation%20Slides/2.png)
+![Why schools](https://github.com/alexazhu/36726-PIGHT-COVID/blob/cdae234f25759a6ec7d711e9b3a9881be81d02b5/Presentation%20Slides/2.png)
 
 
 # DATA OVERVIEW
@@ -30,4 +31,4 @@ Author: CMU MSP TEAM
 
 ## Why We Choose Ohio State for Analysis?
 
-![Why ohio](![Data Relation](https://github.com/alexazhu/36726-PIGHT-COVID/blob/1f7f1b266ffb68fe20fe465aa7d576b5bb345a20/Presentation%20Slides/3.png)
+![Why ohio](https://github.com/alexazhu/36726-PIGHT-COVID/blob/1f7f1b266ffb68fe20fe465aa7d576b5bb345a20/Presentation%20Slides/3.png)
