@@ -2,9 +2,9 @@
 
 # Effect of School Policies on COVID-19 Transmission
 
-Author: Cheyenne Ehman, Yixuan Luo, Zi Yang, Ziyan Zhu
-Advisor: Valerie Ventura
-Collaborator: PHIGHT COVID Team
+- Author: Cheyenne Ehman, Yixuan Luo, Zi Yang, Ziyan Zhu
+- Advisor: Valerie Ventura
+- Collaborator: PHIGHT COVID Team
 
 ## Introduction
 
