@@ -42,7 +42,7 @@
 ### Significant Difference in Averaged Death Proportions among counties
 
 
-![teaching difference](https://github.com/alexazhu/36726-PIGHT-COVID/blob/1f7f1b266ffb68fe20fe465aa7d576b5bb345a20/Presentation%20Slides/4.png)
+![teaching difference](https://github.com/alexazhu/36726-PIGHT-COVID/blob/6e9f5160b74d04ed5b754fec0ac880269c1fa10a/Presentation%20Slides/4.png)
 
 
 ### Confounding Effects
@@ -50,4 +50,24 @@
 ![confounding effects](https://github.com/alexazhu/36726-PIGHT-COVID/blob/71630ddd0e8f76383aa62989c290da94c13efceb/Presentation%20Slides/5.png)
 
 
-![y0](https://github.com/alexazhu/36726-PIGHT-COVID/blob/1f7f1b266ffb68fe20fe465aa7d576b5bb345a20/Presentation%20Slides/6.png)
+![y0](https://github.com/alexazhu/36726-PIGHT-COVID/blob/6e9f5160b74d04ed5b754fec0ac880269c1fa10a/Presentation%20Slides/6.png)
+
+### Alternative Explanation for Difference in Deaths
+
+When Fall starts, parents are able to go to work if their children leave home and go to school.
+
+![full time work](https://github.com/alexazhu/36726-PIGHT-COVID/blob/526ff92c0082da9a67cc09b1bf93c4ffdddd66e6/Presentation%20Slides/7.png)
+
+
+## Recap and Next Steps
+
+- Death proportions averaged within On-Premises, Hybrid and Online Only counties remain significantly different after adjusting for confounder Y0
+
+
+- We need to identify and adjust for other possible confounders as well as for  variables that could also explain the differences in death tolls between On-Premises, Hybrid and Online Only counties.
+   E.g.: Mobility
+  - People going to work
+  - People going to restaurants
+
+
+
