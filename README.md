@@ -1,4 +1,4 @@
-Author: CMU MSP TEAM Ziyan Zhu
+Author: CMU MSP TEAM
 
 # Introduction
 
