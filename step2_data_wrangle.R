@@ -188,7 +188,6 @@ case_mobility <- mobility%>%
 
 write.csv(case_mobility,"case_mobility.csv")
 
-
 ##################### calculate death prop ########################
 
 # county-wise death proportions = cum deaths/population on 2021-02-22
