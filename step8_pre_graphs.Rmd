@@ -57,7 +57,7 @@ ggplot(rolling_age_cases, aes(x=Date)) +
             color = NA,alpha=0.2, show.legend = F, fill = "orange") + 
   geom_vline(xintercept = as.POSIXct ("2020/08/18") + days(7),lty = 2)+ 
   xlim(c(as.POSIXct ("2020/08/01"),as.POSIXct ("2021/01/01"))) + 
-  labs(title = "Total Cases and Proportion of Cases in 0-19 Year Age Group",
+  labs(title = "Total Cases and Percent of Cases in 0-19 Year Age Group",
        subtitle = "Yellow Area represents the fall semester",
        caption = "Smoothed using a 7 day moving average",
        color = "")+
@@ -84,7 +84,7 @@ ggplot(cases_by_age_long,aes(x = Date, y = roll_percent_cases, color = age_group
                 ymin=-Inf,ymax=Inf),
             color = NA,alpha=0.2, show.legend = F, fill = "orange")  + xlim(c(as.POSIXct ("2020/08/01"),as.POSIXct ("2021/01/01"))) + 
   theme_bw() + 
-  labs(title = "Proportion of Cases by Age Group",
+  labs(title = "Percent of Cases by Age Group",
        subtitle = "Yellow Area represents the fall semester",
        y = "% Daily Cases",
        caption = "Smoothed using a 7 day moving average",
@@ -134,7 +134,7 @@ state_open_teaching_enroll%>%
             aes(xmin = as.Date('2020/08/18'), 
                 xmax = as.Date('2020/12/15'), ymin=-Inf, ymax=Inf), 
             color = NA, alpha = 0.2, show.legend = F, fill = 'orange') +
-  labs(x='School Reopen Date',y = 'County Student Proportion',title = 'Percentage of Student on Different School Reopen Dates \n(On Premises & Hybrid)',col="",fill="Majority Teaching Method")+ xlim(as.Date('2020/08/01'),as.Date('2021/01/01'))+
+  labs(x='School Reopen Date',y = 'County Student Proportion',title = 'Percent of Students on Different School Reopen Dates \n(teaching with in-person components)',col="",fill="Majority Teaching Method")+ xlim(as.Date('2020/08/01'),as.Date('2021/01/01'))+
   scale_fill_manual(values = c("#00BA38", "#F8766D")) +
   theme_bw()+theme(legend.position= c(0.77, 0.8),legend.title = element_text(size=13),legend.text = element_text(size=13),axis.title = element_text(size=15),axis.text = element_text(size=15),legend.background = element_rect(fill = alpha("orange",0.0)),legend.key.size = unit(1.4,"lines"),title = element_text(size=12.9))+
   theme(axis.line = element_line(colour = "black"),
@@ -462,6 +462,7 @@ date_mobility%>%
     panel.grid.minor = element_blank(),
     panel.border = element_blank(),
     panel.background = element_blank()) 
+
 
 ```
 
