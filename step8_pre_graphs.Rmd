@@ -531,6 +531,7 @@ date_mobility%>%
        color = "Majority Teaching Method",title = "Number of Restaurant Visit Normalized by Population") +
   theme(legend.position = "bottom")+theme(legend.title = element_text(size=13),legend.text = element_text(size=13),axis.title = element_text(size=15),axis.text = element_text(size=15),legend.background = element_rect(fill = alpha("orange",0.0)),legend.key.size = unit(1.4,"lines"),title = element_text(size=12.9))
 ```
+
 ```{r}
 state_cases <- cases%>%
   group_by(DATE)%>%
