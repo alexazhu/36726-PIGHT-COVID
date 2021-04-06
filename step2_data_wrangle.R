@@ -7,7 +7,7 @@ library(reshape2)
 ################### OH_K12 ###################
 
 # read in OH_K12 data
-OH_K12 <- read.csv("OH_K12_clean.csv")
+OH_K12 <- read.csv("Processed Data/OH_K12_clean.csv")
 OH_K12$opendategrouped <- as.Date(OH_K12$opendategrouped)
 
 ################## teaching method ######################
@@ -126,7 +126,7 @@ county_open_teaching_enroll <- OH_K12%>%
 # read in OHIO_CASES_DATA
 cases <- read_excel("COVID_CASES_OH_CNTY_20210223_pop.xlsx")
 # convert dates
-cases$DATE <- as.Date(cases$DATE, format = "%m/%d/%y")
+cases$DATE <- as.Date(cases$DATE, "%m/%d/%Y")
 # remove UNASSIGNED and OUT OF OH data
 cases <- cases%>%
   filter( (COUNTY != 'UNASSIGNED') & (COUNTY !='OUT OF OH'))%>%
@@ -180,13 +180,13 @@ mobility <- parttime_work%>%
          full_work_prop_7d,full_work_sample_size,
          res_visit_by_pop,bar_visit_by_pop)
 
-write.csv(mobility,"mobility.csv")
+#write.csv(mobility,"mobility.csv")
 
 case_mobility <- mobility%>%
   right_join(cases,by=c("geo_value"="FIPS","time_value"="DATE"))%>%
   rename(FIPS = geo_value,DATE = time_value,)
 
-write.csv(case_mobility,"case_mobility.csv")
+#write.csv(case_mobility,"case_mobility.csv")
 
 ##################### calculate death prop ########################
 
@@ -206,7 +206,7 @@ county_policy_wide <- wide_teaching_enroll%>%
   full_join(wide_studentmask_enroll, by = c("county"))%>%
   full_join(wide_staffmask_enroll, by = c("county"))
 
-write.csv(county_policy_wide,"county_policy_aggregate_wide.csv")
+write.csv(county_policy_wide,"Processed Data/county_policy_aggregate_wide.csv")
 
 ################### long table ################### 
 
