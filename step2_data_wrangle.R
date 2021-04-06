@@ -126,12 +126,12 @@ county_open_teaching_enroll <- OH_K12%>%
 # read in OHIO_CASES_DATA
 cases <- read_excel("COVID_CASES_OH_CNTY_20210223_pop.xlsx")
 # convert dates
-cases$DATE <- as.Date(cases$DATE, format = "%m/%d/%Y")
+cases$DATE <- as.Date(cases$DATE, format = "%m/%d/%y")
 # remove UNASSIGNED and OUT OF OH data
 cases <- cases%>%
   filter( (COUNTY != 'UNASSIGNED') & (COUNTY !='OUT OF OH'))%>%
   mutate(FIPS = str_sub(UID,start = 4,end = 8))%>%
-  select(COUNTY,FIPS,DATE,CNTY_LAT,CNTY_LONG,POPULATION,CUMCONFIRMED,CUMDEATHS)
+  select(COUNTY,FIPS,DATE,CNTY_LAT,CNTY_LONG,POPULATION,CUMCONFIRMED,CUMDEATHS,NEWDEATHS,NEWCONFIRMED)
 
 ##################### get mobility cured data ########################
 library(covidcast)

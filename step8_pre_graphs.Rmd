@@ -124,7 +124,7 @@ state_open_teaching_enroll%>%
             aes(xmin = as.Date('2020/08/18'), 
                 xmax = as.Date('2020/12/15'), ymin=-Inf, ymax=Inf), 
             color = NA, alpha = 0.2, show.legend = F, fill = 'orange') +
-  labs(x='School Reopen Date',y = 'County Student Propotion',title = 'Percentage of Student on Different School Reopen Dates \n(On Premises & Hybrid)',col="",fill="Majority Teaching Method")+ xlim(as.Date('2020/08/01'),as.Date('2021/01/01'))+
+  labs(x='School Reopen Date',y = 'County Student Proportion',title = 'Percentage of Student on Different School Reopen Dates \n(On Premises & Hybrid)',col="",fill="Majority Teaching Method")+ xlim(as.Date('2020/08/01'),as.Date('2021/01/01'))+
   scale_fill_manual(values = c("#00BA38", "#F8766D")) +
   theme_bw()+theme(legend.position= c(0.77, 0.8),legend.title = element_text(size=13),legend.text = element_text(size=13),axis.title = element_text(size=15),axis.text = element_text(size=15),legend.background = element_rect(fill = alpha("orange",0.0)),legend.key.size = unit(1.4,"lines"),title = element_text(size=12.9))
 
@@ -173,8 +173,8 @@ case_policy_wide%>%
            hjust = 1.1) + 
   theme_bw() + 
   labs(x = "Date", y = "Cumulative Death Incidence / 1,000 people",
-       color = "Majority Teaching Method") + 
-  theme(legend.position = "bottom")+theme(legend.title = element_text(size=13),legend.text = element_text(size=13),axis.title = element_text(size=15),axis.text = element_text(size=15),legend.background = element_rect(fill = alpha("orange",0.0)),legend.key.size = unit(1.4,"lines"),title = element_text(size=12.9))
+       subtitle = "Yellow area represents Fall Semester",color = "Majority Teaching Method",title="Death Incidences Increase Faster for Red Counties ") +
+  theme(legend.position = "")+theme(legend.title = element_text(size=13),legend.text = element_text(size=13),axis.title = element_text(size=14),axis.text = element_text(size=15),legend.background = element_rect(fill = alpha("orange",0.0)),legend.key.size = unit(1.4,"lines"),title = element_text(size=12.9))
 
 #ggsave("totaldeath.jpg", width = 5,height = 5)
 
@@ -429,13 +429,13 @@ date_mobility%>%
             color = NA,alpha=0.2, show.legend = F, fill = "orange") + 
   geom_line(aes(color = major_teaching),size = 1, alpha = .8)+
   geom_vline(xintercept = date.intercept, linetype = "dashed") + 
-  annotate("text",x = date.intercept,y = 0.1,
+  annotate("text",x = date.intercept,y = 0.08,
            label = date.intercept,
            hjust = 1.1) + 
   theme_bw() + 
-  labs(x = "Date", y = "% Devices in population",subtitle = "Average over 7 days",
-       color = "Majority Teaching Method",title = "Percentage of Devices Away Home for 6hr+") +
-  theme(legend.position = "bottom")+theme(legend.title = element_text(size=13),legend.text = element_text(size=13),axis.title = element_text(size=15),axis.text = element_text(size=15),legend.background = element_rect(fill = alpha("orange",0.0)),legend.key.size = unit(1.4,"lines"),title = element_text(size=12.9))
+  labs(x = "Date", y = "% Cell phones in population",caption = "Average over 7 days",subtitle = "Yellow area represents Fall Semester",
+       color = "Majority Teaching Method",title = "Percent Cell Phones Away Home for 6hr+") + ylim(0.02,0.10)+
+  theme(legend.position = "right")+theme(legend.title = element_text(size=13),legend.text = element_text(size=13),axis.title = element_text(size=15),axis.text = element_text(size=15),legend.background = element_rect(fill = alpha("orange",0.0)),legend.key.size = unit(1.4,"lines"),title = element_text(size=12.9))
 
 ```
 
@@ -456,6 +456,36 @@ date_mobility%>%
        color = "Majority Teaching Method",title = "Percentage of Devices Away Home for 3-6hr") +
   theme(legend.position = "bottom")+theme(legend.title = element_text(size=13),legend.text = element_text(size=13),axis.title = element_text(size=15),axis.text = element_text(size=15),legend.background = element_rect(fill = alpha("orange",0.0)),legend.key.size = unit(1.4,"lines"),title = element_text(size=12.9))
 ```
+```{r}
+# plot death prop over time by the majority teaching method
+case_policy_wide%>%
+  group_by(DATE, major_teaching) %>%
+  drop_na(major_teaching)%>%
+  summarise(total_deaths = sum(CUMDEATHS),
+            total_pop = sum(POPULATION),
+            death_prop = total_deaths/total_pop,
+            death_prop_upper = death_prop + z_cl*sqrt(death_prop*(1 - death_prop)/total_pop),
+            death_prop_lower = death_prop - z_cl*sqrt(death_prop*(1 - death_prop)/total_pop),
+            .groups = "drop") %>%
+  ggplot(aes(x = DATE, y = death_prop*1000, group = major_teaching))+
+  geom_rect(data=case_policy_wide[1,],
+            aes(xmin=as.Date("2020/08/26"), xmax=as.Date("2020/12/12"),
+                ymin=-Inf,ymax=Inf),
+            color = NA,alpha=0.2, show.legend = F, fill = "orange") + 
+  geom_line(aes(color = major_teaching),size = 1, alpha = .8) + 
+  geom_ribbon(aes(ymin = 1000*death_prop_lower, ymax = 1000*death_prop_upper,
+                  fill= major_teaching), 
+              alpha = .3, show.legend = F)+ 
+  geom_vline(xintercept = date.intercept, linetype = "dashed") + 
+  annotate("text",x = date.intercept,y = 1.5,
+           label = date.intercept,
+           hjust = 1.1) + 
+  theme_bw() + 
+  labs(x = "Date", y = "Cumulative Death Incidence / 1,000 people",
+       color = "Majority Teaching Method") + 
+  theme(legend.position = "bottom")+theme(legend.title = element_text(size=13),legend.text = element_text(size=13),axis.title = element_text(size=15),axis.text = element_text(size=15),legend.background = element_rect(fill = alpha("orange",0.0)),legend.key.size = unit(1.4,"lines"),title = element_text(size=12.9))+geom_line(data=date_mobility,aes(x=DATE,y=full_work_prop,color=major_teaching))
+
+```
 
 
 ```{r}
@@ -474,6 +504,41 @@ date_mobility%>%
   labs(x = "Date", y = "Number of Restaurant Visit",subtitle = "Average over 7 days, no data for Hybrid counties",
        color = "Majority Teaching Method",title = "Number of Restaurant Visit Normalized by Population") +
   theme(legend.position = "bottom")+theme(legend.title = element_text(size=13),legend.text = element_text(size=13),axis.title = element_text(size=15),axis.text = element_text(size=15),legend.background = element_rect(fill = alpha("orange",0.0)),legend.key.size = unit(1.4,"lines"),title = element_text(size=12.9))
+```
+```{r}
+state_cases <- cases%>%
+  group_by(DATE)%>%
+  summarise(state_death = sum(CUMDEATHS,na.rm = T),state_new_death=sum(NEWDEATHS,na.rm = T))
+
+state_cases%>%
+  ggplot(aes(x = DATE, y = state_death))+geom_line(size = 1)+
+  geom_rect(data=state_cases[1,],
+            aes(xmin=as.Date("2020/08/18"), xmax=as.Date("2020/12/12"),
+                ymin=-Inf,ymax=Inf),
+            color = NA,alpha=0.2, show.legend = F, fill = "orange") + 
+  geom_vline(xintercept = as.Date("2020/11/24"), linetype = "dashed") + 
+  annotate("text",x = as.Date("2020/11/24"),y = 12000,
+           label = "2020/11/24",
+           hjust = 1.1) + 
+  theme_bw() + 
+  labs(x = "Date", y = "Cumulative Death Incidence") + 
+  theme(legend.position = "bottom")+theme(,axis.title = element_text(size=15),axis.text = element_text(size=15),title = element_text(size=12.9))
+
+
+state_cases%>%
+  filter(DATE<as.Date("2021/01/31"))%>%
+  ggplot(aes(x = DATE, y = state_new_death))+geom_line(size = 1)+
+  geom_rect(data=state_cases[1,],
+            aes(xmin=as.Date("2020/08/18"), xmax=as.Date("2020/12/12"),
+                ymin=-Inf,ymax=Inf),
+            color = NA,alpha=0.2, show.legend = F, fill = "orange") + 
+  geom_vline(xintercept = as.Date("2020/11/24"), linetype = "dashed") + 
+  annotate("text",x = as.Date("2020/11/24"),y = 200,
+           label = "2020/11/24",
+           hjust = 1.1) + 
+  theme_bw() + ylim(0,300)+
+  labs(x = "Date", y = "New Death Incidence") + 
+  theme(legend.position = "bottom")+theme(,axis.title = element_text(size=15),axis.text = element_text(size=15),title = element_text(size=12.9))
 ```
 
 
