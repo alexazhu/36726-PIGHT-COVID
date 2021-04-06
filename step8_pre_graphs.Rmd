@@ -90,7 +90,12 @@ ggplot(cases_by_age_long,aes(x = Date, y = roll_percent_cases, color = age_group
        caption = "Smoothed using a 7 day moving average",
        color = "Age Group")+ theme_bw()+
   theme(legend.position="")+
-  theme(axis.title = element_text(size=15),axis.text = element_text(size=15),title = element_text(size=15))
+  theme(axis.title = element_text(size=15),axis.text = element_text(size=15),title = element_text(size=15))+
+  theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank()) 
 
 #ggsave("prop_age.jpg", width = 7,height = 5)
 ```
@@ -113,7 +118,12 @@ state_open_teaching_enroll%>%
             color = NA, alpha = 0.2, show.legend = F, fill = 'orange') +
   labs(x='School Reopen Date',y = 'County Student Enrollment / 1000',title = 'Number of Student Enrollment on Different School Reopen Dates \n(On Premises & Hybrid)',col="",fill="Majority Teaching Method")+ xlim(as.Date('2020/08/01'),as.Date('2021/01/01'))+
   scale_fill_manual(values = c("#00BA38", "#F8766D")) +
-  theme_bw()+theme(legend.position= c(0.77, 0.8),legend.title = element_text(size=13),legend.text = element_text(size=13),axis.title = element_text(size=15),axis.text = element_text(size=15),legend.background = element_rect(fill = alpha("orange",0.0)),legend.key.size = unit(1.4,"lines"),title = element_text(size=12.9))
+  theme_bw()+theme(legend.position= c(0.77, 0.8),legend.title = element_text(size=13),legend.text = element_text(size=13),axis.title = element_text(size=15),axis.text = element_text(size=15),legend.background = element_rect(fill = alpha("orange",0.0)),legend.key.size = unit(1.4,"lines"),title = element_text(size=12.9))+
+  theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank()) 
 
 
 state_open_teaching_enroll%>%
@@ -126,7 +136,12 @@ state_open_teaching_enroll%>%
             color = NA, alpha = 0.2, show.legend = F, fill = 'orange') +
   labs(x='School Reopen Date',y = 'County Student Proportion',title = 'Percentage of Student on Different School Reopen Dates \n(On Premises & Hybrid)',col="",fill="Majority Teaching Method")+ xlim(as.Date('2020/08/01'),as.Date('2021/01/01'))+
   scale_fill_manual(values = c("#00BA38", "#F8766D")) +
-  theme_bw()+theme(legend.position= c(0.77, 0.8),legend.title = element_text(size=13),legend.text = element_text(size=13),axis.title = element_text(size=15),axis.text = element_text(size=15),legend.background = element_rect(fill = alpha("orange",0.0)),legend.key.size = unit(1.4,"lines"),title = element_text(size=12.9))
+  theme_bw()+theme(legend.position= c(0.77, 0.8),legend.title = element_text(size=13),legend.text = element_text(size=13),axis.title = element_text(size=15),axis.text = element_text(size=15),legend.background = element_rect(fill = alpha("orange",0.0)),legend.key.size = unit(1.4,"lines"),title = element_text(size=12.9))+
+  theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank()) 
 
 ```
 
@@ -138,14 +153,14 @@ county_policy_wide$major_teaching <- factor(county_policy_wide$major_teaching,
 # see when the intesection happens
 date.intercept <- as.Date("2020-11-24")
 
+
 # add 95% confidence bans
 confidence_level <- .95
 z_cl <- qnorm(confidence_level)
 
 # case_policy_wide
 case_policy_wide <- cases %>%
-  left_join(county_policy_wide[,c("county","major_teaching","Online_Only","Hybrid","On_Premises")],
-            by = c("COUNTY" = "county")) %>%
+  left_join(county_policy_wide[,c("county","major_teaching","Online_Only","Hybrid","On_Premises")],by = c("COUNTY" = "county")) %>%
   mutate(death_prop = CUMDEATHS/POPULATION)
 
 # plot death prop over time by the majority teaching method
@@ -172,11 +187,17 @@ case_policy_wide%>%
            label = date.intercept,
            hjust = 1.1) + 
   theme_bw() + 
+  ggtitle("Death Incidences Increase Faster for Red Counties ")+
   labs(x = "Date", y = "Cumulative Death Incidence / 1,000 people",
-       subtitle = "Yellow area represents Fall Semester",color = "Majority Teaching Method",title="Death Incidences Increase Faster for Red Counties ") +
-  theme(legend.position = "")+theme(legend.title = element_text(size=13),legend.text = element_text(size=13),axis.title = element_text(size=14),axis.text = element_text(size=15),legend.background = element_rect(fill = alpha("orange",0.0)),legend.key.size = unit(1.4,"lines"),title = element_text(size=12.9))
+       subtitle = "Yellow area represents Fall Semester",color = "Majority Teaching Method") +
+  theme(legend.position = "")+theme(legend.title = element_text(size=13),legend.text = element_text(size=13),axis.title = element_text(size=14),axis.text = element_text(size=15),legend.background = element_rect(fill = alpha("orange",0.0)),legend.key.size = unit(1.4,"lines"),title = element_text(size=12.9))+
+  theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank()) 
 
-#ggsave("totaldeath.jpg", width = 5,height = 5)
+ggsave("totaldeath.jpg", width = 6,height = 5)
 
 ```
 
@@ -334,7 +355,7 @@ ggplot(lag_cases,aes(x = DATE, y = death_prop_inc*1000,
        caption = "Increase compared to 3 Week Lag",
        color = "Majority Teaching Method") + 
   scale_y_continuous(labels = comma) + 
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom")+ opts(panel.background = theme_rect(fill='white', colour='black')) + opts(panel.grid.major = none, panel.grid.minor = none)
 
 ```
 
@@ -431,11 +452,16 @@ date_mobility%>%
   geom_vline(xintercept = date.intercept, linetype = "dashed") + 
   annotate("text",x = date.intercept,y = 0.08,
            label = date.intercept,
-           hjust = 1.1) + 
+           hjust = 1.1,size=5) + 
   theme_bw() + 
   labs(x = "Date", y = "% Cell phones in population",caption = "Average over 7 days",subtitle = "Yellow area represents Fall Semester",
        color = "Majority Teaching Method",title = "Percent Cell Phones Away Home for 6hr+") + ylim(0.02,0.10)+
-  theme(legend.position = "right")+theme(legend.title = element_text(size=13),legend.text = element_text(size=13),axis.title = element_text(size=15),axis.text = element_text(size=15),legend.background = element_rect(fill = alpha("orange",0.0)),legend.key.size = unit(1.4,"lines"),title = element_text(size=12.9))
+  theme(legend.position = "right")+theme(legend.title = element_text(size=13),legend.text = element_text(size=13),axis.title = element_text(size=15),axis.text = element_text(size=15),legend.background = element_rect(fill = alpha("orange",0.0)),legend.key.size = unit(1.4,"lines"),title = element_text(size=12.9))+
+  theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank()) 
 
 ```
 
