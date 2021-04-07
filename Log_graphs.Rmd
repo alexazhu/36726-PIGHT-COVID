@@ -10,14 +10,12 @@ library(readxl)
 library(tidyverse)
 # read in OHIO_CASES_DATA
 cases <- read_excel("COVID_CASES_OH_CNTY_20210223_pop.xlsx")
-# convert dates
-cases$DATE <- as.Date(cases$DATE, "%m/%d/%Y")
+cases$DATE <- as.Date(cases$DATE, "%m/%d/%Y") # convert dates
 # remove UNASSIGNED and OUT OF OH data
 cases <- cases%>%
   filter( (COUNTY != 'UNASSIGNED') & (COUNTY !='OUT OF OH'))%>%
   mutate(FIPS = str_sub(UID,start = 4,end = 8))%>%
   select(COUNTY,FIPS,DATE,CNTY_LAT,CNTY_LONG,POPULATION,CUMCONFIRMED,CUMDEATHS,NEWDEATHS,NEWCONFIRMED)
-
 ```
 
 # $Log(Death_t + 1)$ for each county
@@ -28,17 +26,37 @@ log_deaths_county_df <- cases %>%
   group_by(COUNTY) %>%
   mutate(log_deaths = log(CUMDEATHS + 1),
          log_new_deaths = log(NEWDEATHS + 1))
+# Want to order the counties by most Populous
+log_deaths_county_df$COUNTY <- factor(log_deaths_county_df$COUNTY,
+                                      levels = levels(fct_reorder(log_deaths_county_df$COUNTY,
+                                                                log_deaths_county_df$POPULATION,max,
+                                                                .desc = TRUE)))
 ```
+
+```{r,include = FALSE}
+# This is a test chunk to see if it works on one county
+frank <- log_deaths_county_df %>%
+  filter(COUNTY == "FRANKlIN")
+library(ggformula)
+ggplot(frank, aes(x = DATE, y = log_deaths)) + 
+    geom_point(size = 2)+ 
+    geom_spline(aes(x = DATE, y = log_deaths),df = round(nrow(frank)/21,0), 
+                color = "red",size =1)+ 
+    theme_bw() + 
+    labs(x = "Date", y = "Log( Cumulative Deaths + 1 )")
+```
+
 
 # Cumulative Deaths
 
 ```{r, results='asis', fig.width= 12,fig.height=14}
 library(ggforce)
-library(splines)
+library(ggformula)
 for(i in 1:10){
   p <- ggplot(log_deaths_county_df, aes(x = DATE, y = log_deaths)) + 
-      geom_point() + 
-      geom_smooth(method = "lm",formula = y ~ bs(x,3)) + 
+      geom_point(size = 2) + 
+      geom_spline(aes(x = DATE, y = log_deaths),df = round(398/21,0), 
+                color = "red",size =1)+ 
       facet_wrap_paginate(~COUNTY, ncol = 3, nrow = 3, page = i)+ 
       theme_bw() + 
       labs(x = "Date", y = "Log( Cumulative Deaths + 1 )")
@@ -54,8 +72,9 @@ library(ggforce)
 library(splines)
 for(i in 1:10){
   p <- ggplot(log_deaths_county_df, aes(x = DATE, y = log_new_deaths)) + 
-      geom_point() + 
-      geom_smooth(method = "lm",formula = y ~ bs(x,3)) + 
+      geom_point(size = 2) + 
+      geom_spline(aes(x = DATE, y = log_new_deaths),df = round(398/21,0), 
+                color = "red",size =1)+ 
       facet_wrap_paginate(~COUNTY, ncol = 3, nrow = 3, page = i)+ 
       theme_bw() + 
       labs(x = "Date", y = "Log( New Deaths + 1 )")
