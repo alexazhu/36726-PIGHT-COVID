@@ -54,12 +54,15 @@ distri_neg <- function(newdeaths){
 
 ## apply to each county
 
+
 cases <- cases%>%
   group_by(COUNTY)%>%
   mutate(rev_NEWDEATHS = distri_neg(NEWDEATHS))
 
 # double check
+
 cases[cases$rev_NEWDEATHS<0,]
+
 # two counties have negative new deaths at the beginning
 
 ```
