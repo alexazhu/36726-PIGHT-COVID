@@ -129,7 +129,7 @@ ohio_profile <- ohio_profile[,c(1,14:20,38:50)]
 ohio_profile$County <- toupper(ohio_profile$County)
 
 # read in OHIO_CASES_DATA
-cases <- read_excel("COVID_CASES_20210310_pop.xlsx")
+cases <- read_excel("COVID_CASES_OH_CNTY_20210223_pop.xlsx")
 # convert dates
 cases$DATE <- as.Date(cases$DATE, "%m/%d/%Y")
 # remove UNASSIGNED and OUT OF OH data
