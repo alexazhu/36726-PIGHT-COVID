@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Data
 
-```{r}
+```{r message=FALSE, warning=FALSE, cache=TRUE}
 source("step2_data_wrangle.r")
 
 # read in cases data 

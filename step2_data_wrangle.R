@@ -120,14 +120,7 @@ county_open_teaching_enroll <- OH_K12%>%
   summarise(open_county_enroll = sum(district_enroll),opendate_teaching_county_prop = sum(district_enroll)/county_enroll)%>%
   rename(opendate = date)
 
-date_mobility <- case_mobility%>%
-  left_join(wide_teaching_enroll,by=c('COUNTY'='county'))%>%
-  drop_na(major_teaching)%>%
-  group_by(DATE,major_teaching)%>%
-  summarise(full_work_prop = sum(full_work_prop_7d*POPULATION)/sum(POPULATION),
-            part_work_prop = sum(part_work_prop_7d*POPULATION)/sum(POPULATION),
-            res_visit_prop = sum(res_visit_by_pop),
-            bar_visit_prop = sum(bar_visit_by_pop))
+
 
 ################## OH CASES ######################
 
@@ -201,6 +194,14 @@ case_mobility <- mobility%>%
 
 #write.csv(case_mobility,"case_mobility.csv")
 
+date_mobility <- case_mobility%>%
+  left_join(wide_teaching_enroll,by=c('COUNTY'='county'))%>%
+  drop_na(major_teaching)%>%
+  group_by(DATE,major_teaching)%>%
+  summarise(full_work_prop = sum(full_work_prop_7d*POPULATION)/sum(POPULATION),
+            part_work_prop = sum(part_work_prop_7d*POPULATION)/sum(POPULATION),
+            res_visit_prop = sum(res_visit_by_pop),
+            bar_visit_prop = sum(bar_visit_by_pop))
 ##################### calculate death prop ########################
 
 # county-wise death proportions = cum deaths/population on 2021-02-22
