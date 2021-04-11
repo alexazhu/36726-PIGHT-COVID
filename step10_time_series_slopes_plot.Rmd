@@ -279,6 +279,19 @@ cases_clean_teach_agg%>%
 ggsave("time_series_on_premises.png",width = 7, height = 5)
 ```
 
+```{r}
+cases_clean_teach_agg%>%
+  filter(major_teaching=="On Premises")%>%
+  left_join(cum_mobility%>%filter(major_teaching=="On Premises"),by="DATE")%>%
+  ggplot(aes(y = B,x=cum_full_work))+ 
+  geom_point(na.rm = TRUE,colour = 'salmon') + 
+  geom_smooth(method = "lm", formula = y~x, se = FALSE, na.rm = TRUE, show.legend = FALSE,colour = 'black') + 
+  theme_minimal() + theme(legend.position = "bottom")+
+  labs(x = "Cumulative Full-time Workers/Students", y = "Exponential Growth Coefficient", 
+       title = "B ~ Cumulative Full-time Workers/Students for On Premises")+theme(text = element_text(size=14),title = element_text(size=16))
+
+ggsave("lm_on_premises.jpg", width = 15, height = 6)
+```
 
 
 Plot2.2: Hybrid
@@ -310,6 +323,18 @@ cases_clean_teach_agg%>%
     panel.background = element_blank()) 
 
 #ggsave("time_series_hybrid.png",width = 7, height = 5)
+```
+```{r}
+cases_clean_teach_agg%>%
+  filter(major_teaching=="Hybrid")%>%
+  left_join(cum_mobility%>%filter(major_teaching=="Hybrid"),by="DATE")%>%
+  ggplot(aes(y = B,x=cum_full_work))+ 
+  geom_point(na.rm = TRUE,colour = 'darkgreen') + 
+  geom_smooth(method = "lm", formula = y~x, se = FALSE, na.rm = TRUE, show.legend = FALSE,colour = 'black') + 
+  theme_minimal() + theme(legend.position = "bottom")+
+  labs(x = "Cumulative Full-time Workers/Students", y = "Exponential Growth Coefficient", 
+       title = "B ~ Cumulative Full-time Workers/Students for Hybrid")+theme(text = element_text(size=14),title = element_text(size=16))
+  
 ```
 
 Plot2.3: Online Only
@@ -344,4 +369,15 @@ ggsave("time_series_online_only.png",width = 7, height = 5)
 ```
 
 
-
+```{r}
+cases_clean_teach_agg%>%
+  filter(major_teaching=="Online Only")%>%
+  left_join(cum_mobility%>%filter(major_teaching=="Online Only"),by="DATE")%>%
+  ggplot(aes(y = B,x=cum_full_work))+ 
+  geom_point(na.rm = TRUE,colour = 'darkblue') + 
+  geom_smooth(method = "lm", formula = y~x, se = FALSE, na.rm = TRUE, show.legend = FALSE,colour = 'black') + 
+  theme_minimal() + theme(legend.position = "bottom")+
+  labs(x = "Cumulative Full-time Workers/Students", y = "Exponential Growth Coefficient", 
+       title = "B ~ Cumulative Full-time Workers/Students for Online Only")+theme(text = element_text(size=14),title = element_text(size=16))
+  
+```
