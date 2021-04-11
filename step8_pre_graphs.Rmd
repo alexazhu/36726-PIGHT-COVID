@@ -426,15 +426,8 @@ scale_fill_distiller(palette = "OrRd",direction = 1)+labs(fill='Enrollment/1000'
 
 date.intercept
 
-# aggregate daily mobility at state level 
-date_mobility <- case_mobility%>%
-  left_join(wide_teaching_enroll,by=c('COUNTY'='county'))%>%
-  drop_na(major_teaching)%>%
-  group_by(DATE,major_teaching)%>%
-  summarise(full_work_prop = sum(full_work_prop_7d*POPULATION)/sum(POPULATION),
-            part_work_prop = sum(part_work_prop_7d*POPULATION)/sum(POPULATION),
-            res_visit_prop = sum(res_visit_by_pop),
-            bar_visit_prop = sum(bar_visit_by_pop))
+# aggregate daily mobility at state level by teaching method
+date_mobility
 
 # reorder the level 
 date_mobility$major_teaching <- factor(date_mobility$major_teaching,
@@ -483,6 +476,7 @@ date_mobility%>%
        color = "Majority Teaching Method",title = "Percentage of Devices Away Home for 3-6hr") +
   theme(legend.position = "bottom")+theme(legend.title = element_text(size=13),legend.text = element_text(size=13),axis.title = element_text(size=15),axis.text = element_text(size=15),legend.background = element_rect(fill = alpha("orange",0.0)),legend.key.size = unit(1.4,"lines"),title = element_text(size=12.9))
 ```
+
 ```{r}
 # plot death prop over time by the majority teaching method
 case_policy_wide%>%
