@@ -1,0 +1,75 @@
+---
+title: "Slopes of the time series"
+author: "Cheyenne, Ziyan"
+date: "4/11/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Data
+
+```{r}
+source("step2_data_wrangle.r")
+
+# read in cases data 
+# negative values of NEWDEATHS redistributed in rev_NEWDEATHS var
+# splines and slopes added
+cases_clean <- read.csv("county_splines.csv", header = T)
+cases_clean$DATE <- as.Date(cases_clean$DATE)
+
+# get majority teaching method wide_teaching_enroll
+cases_clean_teach <- cases_clean %>%
+  left_join(wide_teaching_enroll, by = c("COUNTY" = "county")) %>%
+  drop_na(major_teaching)
+cases_clean_teach$major_teaching <- factor(cases_clean_teach$major_teaching,
+                                           levels = c("On Premises","Hybrid","Online Only"))
+```
+
+# Aggregate counties by teaching method
+
+```{r}
+cases_clean_teach_agg <- cases_clean_teach %>%
+  group_by(DATE, major_teaching) %>%
+  summarise(total_new_deaths = sum(rev_NEWDEATHS), .groups = "drop") %>%
+  mutate(log_new_deaths = log(total_new_deaths + 1)) %>%
+  group_by(major_teaching) %>%
+  mutate(smooth.spline = smooth.spline(DATE,log_new_deaths,df = 398/28)$y,
+         B = predict(smooth.spline(DATE,log_new_deaths,df = 398/28),deriv = 1)$y)
+
+ggplot(cases_clean_teach_agg, aes(x = DATE, color = major_teaching)) +
+  geom_point(aes(y = log_new_deaths), alpha = .3)+ 
+  geom_line(aes(y = smooth.spline), size = 1) +
+  geom_rect(data = cases_clean_teach_agg[1,],
+            aes(xmin=as.Date("2020/08/18"), xmax=as.Date("2020/12/15"),
+                ymin=-Inf,ymax=Inf),
+            color = NA,alpha=0.2, show.legend = F, fill = "orange") + 
+  theme_bw() + 
+  labs(x = "Date", y = "Log ( New Deaths + 1 )", 
+       color = "Majority Teaching Method",
+       caption = "Smoothing window set to every 4 weeks",
+       subtitle = "Yellow area represents the fall semester (08/18 - 12/15)") + 
+  theme(legend.position = "bottom")
+#ggsave("log_death_time_series.png",width = 7, height = 5)
+
+week3_after_start <- as.Date("2020/08/18") + 21
+
+ggplot(cases_clean_teach_agg, aes(x = DATE, color = major_teaching)) + 
+  geom_line(aes(y = B), size = 1) +
+  geom_rect(data = cases_clean_teach_agg[1,],
+            aes(xmin=as.Date("2020/08/18"), xmax=as.Date("2020/12/15"),
+                ymin=-Inf,ymax=Inf),
+            color = NA,alpha=0.2, show.legend = F, fill = "orange") +
+  geom_vline(xintercept = week3_after_start, lty = 2) + 
+  annotate("text",label = week3_after_start,
+           x = week3_after_start, y = .05, hjust = 1.1)+ 
+  theme_bw() + 
+  labs(x = "Date", y = "Exponential Growth Coefficient", 
+       color = "Majority Teaching Method",
+       caption = "Smoothing window set to every 4 weeks",
+       subtitle = "Yellow area represents the fall semester (08/18 - 12/15)") + 
+  theme(legend.position = "bottom")
+#ggsave("egc_time_series.png",width = 7, height = 5)
+```
