@@ -184,9 +184,11 @@ cum_mobility <- wide_teaching_enroll%>%
   left_join(case_mobility,by=c("county"="COUNTY"))%>%
   left_join(major_opendate,by="county")%>%
   group_by(DATE,major_teaching)%>%
-  summarise(cum_full_work = sum(full_work_prop_7d*POPULATION),cum_full_work_prop = sum(full_work_prop_7d*POPULATION)/sum(POPULATION), .groups = "drop")
+  summarise(cum_full_work = sum(full_work_prop_7d*POPULATION),cum_full_work_prop = sum(full_work_prop_7d*POPULATION)/sum(POPULATION), .groups = "drop")%>%
+  mutate(shiftedDate = DATE+28) ## Shifted Dates!!!!!!!!!!!!
 
 cum_mobility$major_teaching <- factor(cum_mobility$major_teaching,levels = c("On Premises","Hybrid","Online Only"))
+
 ```
 
 ```{r}
@@ -255,14 +257,14 @@ Plot2.1: On Premises
 ```{r}
 cases_clean_teach_agg%>%
   filter(major_teaching=="On Premises")%>%
-  left_join(cum_mobility%>%filter(major_teaching=="On Premises"),by="DATE")%>%
+  inner_join(cum_mobility%>%filter(major_teaching=="On Premises"),by=c("DATE"="shiftedDate"))%>%
   ggplot(aes(x = DATE))+
   geom_line(aes(y = B),size = 1,color="red") +
   geom_rect(data = cases_clean_teach_agg[1,],
             aes(xmin=as.Date("2020/08/18"), xmax=as.Date("2020/12/15"),
                 ymin=-Inf,ymax=Inf),
             color = NA,alpha=0.2, show.legend = F, fill = "orange") + theme_bw() + 
-  labs(x = "Date", y = "Exponential Growth Coefficient", title="On-Premises Counties",
+  labs(x = "Date", y = "Exponential Growth Coefficient", title="On-Premises Counties\n Mobility 4 weeks forward",
        color = "Majority Teaching Method",
        caption = "Smoothing window set to every 4 weeks",
        subtitle = "Yellow area represents the fall semester (08/18 - 12/15)") + 
@@ -282,13 +284,13 @@ ggsave("time_series_on_premises.png",width = 7, height = 5)
 ```{r}
 cases_clean_teach_agg%>%
   filter(major_teaching=="On Premises")%>%
-  left_join(cum_mobility%>%filter(major_teaching=="On Premises"),by="DATE")%>%
+  inner_join(cum_mobility%>%filter(major_teaching=="On Premises"),by=c("DATE"="shiftedDate"))%>%
   ggplot(aes(y = B,x=cum_full_work))+ 
   geom_point(na.rm = TRUE,colour = 'salmon') + 
   geom_smooth(method = "lm", formula = y~x, se = FALSE, na.rm = TRUE, show.legend = FALSE,colour = 'black') + 
   theme_minimal() + theme(legend.position = "bottom")+
   labs(x = "Cumulative Full-time Workers/Students", y = "Exponential Growth Coefficient", 
-       title = "B ~ Cumulative Full-time Workers/Students for On Premises")+theme(text = element_text(size=14),title = element_text(size=16))
+       title = "B ~ Cumulative Full-time Workers/Students 4 weeks forward\n On Premises")+theme(text = element_text(size=14),title = element_text(size=13))
 
 ggsave("lm_on_premises.jpg", width = 15, height = 6)
 ```
@@ -298,14 +300,14 @@ Plot2.2: Hybrid
 ```{r}
 cases_clean_teach_agg%>%
   filter(major_teaching=="Hybrid")%>%
-  left_join(cum_mobility%>%filter(major_teaching=="Hybrid"),by="DATE")%>%
+  inner_join(cum_mobility%>%filter(major_teaching=="Hybrid"),by=c("DATE"="shiftedDate"))%>%
   ggplot(aes(x = DATE))+
   geom_line(aes(y = B),size = 1,color="darkgreen") +
   geom_rect(data = cases_clean_teach_agg[1,],
             aes(xmin=as.Date("2020/08/18"), xmax=as.Date("2020/12/15"),
                 ymin=-Inf,ymax=Inf),
             color = NA,alpha=0.2, show.legend = F, fill = "orange") + theme_bw() + 
-  labs(x = "Date", y = "Exponential Growth Coefficient", title="Hybrid Counties",
+  labs(x = "Date", y = "Exponential Growth Coefficient", title="Hybrid Counties\n Mobility 4 weeks forward",
        color = "Majority Teaching Method",
        caption = "Smoothing window set to every 4 weeks",
        subtitle = "Yellow area represents the fall semester (08/18 - 12/15)") + 
@@ -327,13 +329,13 @@ cases_clean_teach_agg%>%
 ```{r}
 cases_clean_teach_agg%>%
   filter(major_teaching=="Hybrid")%>%
-  left_join(cum_mobility%>%filter(major_teaching=="Hybrid"),by="DATE")%>%
+  inner_join(cum_mobility%>%filter(major_teaching=="Hybrid"),by=c("DATE"="shiftedDate"))%>%
   ggplot(aes(y = B,x=cum_full_work))+ 
   geom_point(na.rm = TRUE,colour = 'darkgreen') + 
   geom_smooth(method = "lm", formula = y~x, se = FALSE, na.rm = TRUE, show.legend = FALSE,colour = 'black') + 
   theme_minimal() + theme(legend.position = "bottom")+
   labs(x = "Cumulative Full-time Workers/Students", y = "Exponential Growth Coefficient", 
-       title = "B ~ Cumulative Full-time Workers/Students for Hybrid")+theme(text = element_text(size=14),title = element_text(size=16))
+       title = "B ~ Cumulative Full-time Workers/Students 4 weeks forward\n Hybrid")+theme(text = element_text(size=14),title = element_text(size=13))
   
 ```
 
@@ -341,14 +343,14 @@ Plot2.3: Online Only
 ```{r}
 cases_clean_teach_agg%>%
   filter(major_teaching=="Online Only")%>%
-  left_join(cum_mobility%>%filter(major_teaching=="Online Only"),by="DATE")%>%
+  inner_join(cum_mobility%>%filter(major_teaching=="Online Only"),by=c("DATE"="shiftedDate"))%>%
   ggplot(aes(x = DATE))+
   geom_line(aes(y = B),size = 1,color="darkblue") +
   geom_rect(data = cases_clean_teach_agg[1,],
             aes(xmin=as.Date("2020/08/18"), xmax=as.Date("2020/12/15"),
                 ymin=-Inf,ymax=Inf),
             color = NA,alpha=0.2, show.legend = F, fill = "orange") + theme_bw() + 
-  labs(x = "Date", y = "Exponential Growth Coefficient", title="Online-only Counties",
+  labs(x = "Date", y = "Exponential Growth Coefficient", title="Online-only Counties\n Mobility 4 weeks forward",
        color = "Majority Teaching Method",
        caption = "Smoothing window set to every 4 weeks",
        subtitle = "Yellow area represents the fall semester (08/18 - 12/15)") + 
@@ -372,12 +374,12 @@ ggsave("time_series_online_only.png",width = 7, height = 5)
 ```{r}
 cases_clean_teach_agg%>%
   filter(major_teaching=="Online Only")%>%
-  left_join(cum_mobility%>%filter(major_teaching=="Online Only"),by="DATE")%>%
+  inner_join(cum_mobility%>%filter(major_teaching=="Online Only"),by=c("DATE"="shiftedDate"))%>%
   ggplot(aes(y = B,x=cum_full_work))+ 
   geom_point(na.rm = TRUE,colour = 'darkblue') + 
   geom_smooth(method = "lm", formula = y~x, se = FALSE, na.rm = TRUE, show.legend = FALSE,colour = 'black') + 
   theme_minimal() + theme(legend.position = "bottom")+
   labs(x = "Cumulative Full-time Workers/Students", y = "Exponential Growth Coefficient", 
-       title = "B ~ Cumulative Full-time Workers/Students for Online Only")+theme(text = element_text(size=14),title = element_text(size=16))
+       title = "B ~ Cumulative Full-time Workers/Students 4 weeks forward\n Online Only")+theme(text = element_text(size=14),title = element_text(size=13))
   
 ```
