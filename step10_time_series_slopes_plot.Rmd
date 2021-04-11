@@ -194,7 +194,7 @@ cum_mobility$major_teaching <- factor(cum_mobility$major_teaching,levels = c("On
 ```{r}
 options(scipen=1000)
 
-ggplot(cum_mobility, aes(x = DATE, color = major_teaching)) +
+ggplot(cum_mobility, aes(x = shiftedDate, color = major_teaching)) +
   geom_line(aes(y = cum_full_work), alpha = 1,size=1)+ 
   geom_rect(data = cum_mobility[1,],
             aes(xmin=as.Date("2020/08/18"), xmax=as.Date("2020/12/15"),
@@ -202,7 +202,7 @@ ggplot(cum_mobility, aes(x = DATE, color = major_teaching)) +
             color = NA,alpha=0.2, show.legend = F, fill = "orange") + 
   theme_bw() + 
   labs(x = "Date", y = "Cumulative Full-time Workers/Students", 
-       color = "Majority Teaching Method", title="Cumulative Full-time Mobility (6hrs+ Away Home)",
+       color = "Majority Teaching Method", title="Cumulative Full-time Mobility (6hrs+ Away Home)\n4 Weeks Forward",
        subtitle = "Yellow area represents the fall semester (08/18 - 12/15)") + 
   theme(axis.line = element_line(colour = "black"),
     panel.grid.major = element_blank(),
@@ -210,7 +210,7 @@ ggplot(cum_mobility, aes(x = DATE, color = major_teaching)) +
     panel.border = element_blank(),
     panel.background = element_blank(),legend.position = "bottom")+theme(legend.text = element_text(size=12),legend.title = element_text(size=12),axis.text = element_text(size=13),title=element_text(size=13))
 
-ggsave("cum_mobility_time_series.png",width = 7, height = 5)
+#ggsave("cum_mobility_time_series.png",width = 7, height = 5)
 ```
 
 Plot1.2: average mobility per color (plot the 3 curves on the same plot).
@@ -220,9 +220,11 @@ date.intercept=as.Date("2020-11-24")
 
 date_mobility$major_teaching <- factor(date_mobility$major_teaching,levels = c("On Premises","Hybrid","Online Only"))
 
+date_mobility$shiftedDate <- date_mobility$DATE + 28
+
 # FULL TIME WORK, 6 hours +
 date_mobility%>%
-  ggplot(aes(x=DATE,y=full_work_prop))+
+  ggplot(aes(x=shiftedDate,y=full_work_prop))+
   geom_rect(data=date_mobility[1,],
             aes(xmin=as.Date("2020/08/26"), xmax=as.Date("2020/12/12"),
                 ymin=-Inf,ymax=Inf),
@@ -234,7 +236,7 @@ date_mobility%>%
            hjust = 1.1,size=5) + 
   theme_bw() + 
   labs(x = "Date", y = "% Full-time Workers/Students",subtitle = "Average over 7 days; Yellow area represents Fall Semester",
-       color = "Majority Teaching Method",title = "Average %Cell Phones Away Home for 6hr+") + ylim(0.02,0.10)+
+       color = "Majority Teaching Method",title = "Average %Cell Phones Away Home for 6hr+\n4 Weeks Forward") + ylim(0.02,0.10)+
   theme(legend.position = "bottom")+theme(legend.title = element_text(size=13),legend.text = element_text(size=13),axis.title = element_text(size=15),axis.text = element_text(size=15),legend.background = element_rect(fill = alpha("orange",0.0)),legend.key.size = unit(1.4,"lines"),title = element_text(size=12.9))+
   theme(axis.line = element_line(colour = "black"),
     panel.grid.major = element_blank(),
