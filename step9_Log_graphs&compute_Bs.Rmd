@@ -104,7 +104,7 @@ gridExtra::grid.arrange(a,b,c,d)
 
 # Cumulative Deaths
 
-```{r, results='asis', fig.width= 12,fig.height=14}
+```{r echo=FALSE, fig.height=14, fig.width=12, results='asis'}
 library(ggforce)
 for(i in 1:10){
   p <- ggplot(log_deaths_county_df, aes(x = DATE, y = log_tot_deaths)) + 
@@ -123,7 +123,7 @@ for(i in 1:10){
 
 # New Deaths
 
-```{r, results='asis', fig.width= 12,fig.height=14, message = FALSE, warning = FALSE}
+```{r echo=FALSE, fig.height=14, fig.width=12, message=FALSE, warning=FALSE, results='asis'}
 for(i in 1:10){
   p <- ggplot(log_deaths_county_df, aes(x = DATE, y = log_new_deaths)) +
       geom_point(size = 2) + 

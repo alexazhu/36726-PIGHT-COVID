@@ -99,7 +99,13 @@ ggplot(cases_clean_teach_agg, aes(x = DATE, color = major_teaching)) +
        color = "Majority Teaching Method",
        caption = "Smoothing window set to every 4 weeks",
        subtitle = "Yellow area represents the fall semester (08/18 - 12/15)") + 
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom")+
+  theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank())+
+  theme(axis.text = element_text(size=15),axis.title=element_text(size=15),legend.text = element_text(size=13))
 #ggsave("log_death_time_series.png",width = 7, height = 5)
 
 week3_after_start <- as.Date("2020/08/18") + 21
@@ -118,7 +124,13 @@ ggplot(cases_clean_teach_agg, aes(x = DATE, color = major_teaching)) +
        color = "Majority Teaching Method",
        caption = "Smoothing window set to every 4 weeks",
        subtitle = "Yellow area represents the fall semester (08/18 - 12/15)") + 
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom")+
+  theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank())+
+  theme(axis.text = element_text(size=15),axis.title=element_text(size=15),legend.text = element_text(size=13))
 #ggsave("egc_time_series.png",width = 7, height = 5)
 ```
 
