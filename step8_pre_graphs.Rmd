@@ -422,8 +422,8 @@ scale_fill_distiller(palette = "OrRd",direction = 1)+labs(fill='Enrollment/1000'
 
 ```
 
-```{r}
 
+```{r}
 date.intercept
 
 # aggregate daily mobility at state level by teaching method
@@ -455,9 +455,8 @@ date_mobility%>%
     panel.grid.minor = element_blank(),
     panel.border = element_blank(),
     panel.background = element_blank()) 
-
-
 ```
+
 
 ```{r}
 date_mobility%>%
