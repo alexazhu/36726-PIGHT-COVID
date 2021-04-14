@@ -9,7 +9,7 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# Data
+# Load in the spline slopes
 
 ```{r message=FALSE, warning=FALSE, cache=TRUE}
 source("step2_data_wrangle.r")
@@ -17,69 +17,53 @@ source("step2_data_wrangle.r")
 # read in cases data 
 # negative values of NEWDEATHS redistributed in rev_NEWDEATHS var
 # splines and slopes added
-cases_clean <- read.csv("county_splines.csv", header = T)
-cases_clean$DATE <- as.Date(cases_clean$DATE)
+cases_slope <- read.csv("county_splines.csv", header = T)
+cases_slope$DATE <- as.Date(cases_slope$DATE)
 
 # get majority teaching method wide_teaching_enroll
-cases_clean_teach <- cases_clean %>%
+cases_slope_teach <- cases_slope %>%
   left_join(wide_teaching_enroll, by = c("COUNTY" = "county")) %>%
   drop_na(major_teaching)%>%
   left_join(county_open_teaching_enroll%>%
   group_by(county)%>%
   slice(which.max(opendate_teaching_county_prop)),by=c("COUNTY" = "county"))
-  
-cases_clean_teach$major_teaching <- factor(cases_clean_teach$major_teaching,levels = c("On Premises","Hybrid","Online Only"))
 
+## ordering the teaching method factor to ensure the color order
+cases_slope_teach$major_teaching <- factor(cases_slope_teach$major_teaching,levels = c("On Premises","Hybrid","Online Only"))
 ```
 
+# Select Max B1 & B0
 
-
-## Histogram of B0 and B1 in 3 weeks
-
-```{r fig.height=3, fig.width=3, message=FALSE, warning=FALSE}
-library(gridExtra)
-
-## B0 week3_after_start
-b03 <- cases_clean_teach%>%
+```{r}
+maxB1 <- cases_slope_teach%>%
   group_by(COUNTY)%>%
-  filter(DATE == as.Date(opendate) + 21)%>%
-  ggplot(aes(x=tot.slope,fill=major_teaching))+geom_histogram(stat = "bin",binwidth = 0.005,color="white")+facet_wrap(~major_teaching)+theme(legend.text = element_text(size=13),legend.title = element_text(size=14))+labs(fill="Major Teaching",x="Slopes of Total Deaths",title="B0 at 3 weeks after school reopen")+
-  theme(axis.line = element_line(colour = "black"),
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank(),
-    panel.border = element_blank(),
-    panel.background = element_blank(),legend.position = "")
+  filter(DATE > as.Date("2020-08-18") & DATE<as.Date("2020-12-15"))%>%
+  summarise(max_B1 = max(new.slope))
 
-## B1 week4_after
-b14 <- cases_clean_teach%>%
+avgB1 <- cases_slope_teach%>%
   group_by(COUNTY)%>%
-  filter(DATE == as.Date(opendate) + 49)%>%
-  ggplot(aes(x=tot.slope,fill=major_teaching))+geom_histogram(stat = "bin",binwidth = 0.005,color="white")+facet_wrap(~major_teaching)+theme(legend.text = element_text(size=13),legend.title = element_text(size=14))+labs(fill="Major Teaching",x="Slopes of Total Deaths",title="B1 at 7(3+4) weeks after school reopen")+
-  theme(axis.line = element_line(colour = "black"),
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank(),
-    panel.border = element_blank(),
-    panel.background = element_blank(),legend.position = "")
+  filter(DATE > as.Date("2020-08-18") & DATE<as.Date("2020-12-15"))%>%
+  summarise(avg_B1 = mean(new.slope))
 
-## B1 week6_after
-b16 <- cases_clean_teach%>%
+## avg3w_B0 ## average B0 of the first 3 weeks of school reopening 
+## avg2w_B0 ## OR average B0s between  2020-08-18 and +14days [before the rate bounce back around the dashed line]
+
+
+avgB0 <- cases_slope_teach%>%
   group_by(COUNTY)%>%
-  filter(DATE == as.Date(opendate) + 63)%>%
-  ggplot(aes(x=tot.slope,fill=major_teaching))+geom_histogram(stat = "bin",binwidth = 0.005,color="white")+facet_wrap(~major_teaching)+theme(legend.text = element_text(size=13),legend.title = element_text(size=14))+labs(fill="Major Teaching",x="Slopes of Total Deaths",title="B1 at 9(3+6) weeks after school reopen")+
-  theme(axis.line = element_line(colour = "black"),
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank(),
-    panel.border = element_blank(),
-    panel.background = element_blank(),legend.position = "")
-
-grid.arrange(b03,b14,b16)
+  filter(DATE > as.Date("2020-08-18") & DATE<as.Date(opendate)+21)%>%
+  summarise(avg3w_B0 = mean(new.slope))%>%
+  left_join(cases_slope_teach%>%
+  group_by(COUNTY)%>%
+  filter(DATE > as.Date("2020-08-18") & DATE<as.Date("2020-08-18")+14)%>%
+  summarise(avg2w_B0 = mean(new.slope)),by="COUNTY")
 ```
 
 
 # Aggregate counties by teaching method
 
 ```{r}
-cases_clean_teach_agg <- cases_clean_teach %>%
+cases_slope_teach_agg <- cases_slope_teach %>%
   group_by(DATE, major_teaching) %>%
   summarise(total_new_deaths = sum(rev_NEWDEATHS), .groups = "drop") %>%
   mutate(log_new_deaths = log(total_new_deaths + 1)) %>%
@@ -87,10 +71,10 @@ cases_clean_teach_agg <- cases_clean_teach %>%
   mutate(smooth.spline = smooth.spline(DATE,log_new_deaths,df = 398/28)$y,
          B = predict(smooth.spline(DATE,log_new_deaths,df = 398/28),deriv = 1)$y)
 
-ggplot(cases_clean_teach_agg, aes(x = DATE, color = major_teaching)) +
+ggplot(cases_slope_teach_agg, aes(x = DATE, color = major_teaching)) +
   geom_point(aes(y = log_new_deaths), alpha = .3)+ 
   geom_line(aes(y = smooth.spline), size = 1) +
-  geom_rect(data = cases_clean_teach_agg[1,],
+  geom_rect(data = cases_slope_teach_agg[1,],
             aes(xmin=as.Date("2020/08/18"), xmax=as.Date("2020/12/15"),
                 ymin=-Inf,ymax=Inf),
             color = NA,alpha=0.2, show.legend = F, fill = "orange") + 
@@ -110,9 +94,9 @@ ggplot(cases_clean_teach_agg, aes(x = DATE, color = major_teaching)) +
 
 week3_after_start <- as.Date("2020/08/18") + 21
 
-ggplot(cases_clean_teach_agg, aes(x = DATE, color = major_teaching)) + 
+ggplot(cases_slope_teach_agg, aes(x = DATE, color = major_teaching)) + 
   geom_line(aes(y = B), size = 1) +
-  geom_rect(data = cases_clean_teach_agg[1,],
+  geom_rect(data = cases_slope_teach_agg[1,],
             aes(xmin=as.Date("2020/08/18"), xmax=as.Date("2020/12/15"),
                 ymin=-Inf,ymax=Inf),
             color = NA,alpha=0.2, show.legend = F, fill = "orange") +
@@ -145,38 +129,46 @@ avg_mobility <- case_mobility%>%
   filter(DATE >= as.Date(opendate) + 21 & DATE <= as.Date(opendate) + 63)%>%
   summarise(avg_full_work_prob = mean(full_work_prop_7d))
 
+# made major teaching method prop
+wide_teaching_enroll <- wide_teaching_enroll%>%
+  mutate(major_teaching_prop = case_when(
+    major_teaching=="Online Only" ~ Online_Only,
+    major_teaching=="Hybrid" ~ Hybrid,
+    major_teaching=="On Premises" ~On_Premises,
+    TRUE~ 0
+  ))
 
-# slice single date B0 and B1
-B0B1 <- cases_clean_teach%>%
-  group_by(COUNTY)%>%
-  filter(DATE == as.Date(opendate) + 21|DATE == as.Date(opendate) + 63 )%>%arrange(COUNTY,DATE)%>%mutate(B_label=ifelse(row_number()==1,"B0","B1"))%>%
+#  B0 and B1
+B0B1 <- maxB1%>%
+  left_join(wide_teaching_enroll, by = c("COUNTY" = "county"))%>%
+  left_join(avgB1,by="COUNTY")%>%
+  left_join(avgB0,by="COUNTY")%>%
   left_join(avg_mobility,by="COUNTY")
-  
+## ordering the teaching method factor to ensure the color order
+B0B1$major_teaching <- factor(B0B1$major_teaching,levels = c("On Premises","Hybrid","Online Only"))
 ```
 
 
 ```{r}
-B0B1_mobility <- B0B1%>%
-  dcast(COUNTY+major_teaching+avg_full_work_prob~B_label,value.var="tot.slope")
-
-# B0 vs B1
-B0B1_mobility%>%
-  ggplot(aes(x=B0,y=B1,group=major_teaching,color=major_teaching))+geom_point(alpha=0.7,aes(size=avg_full_work_prob))+theme_minimal()+labs(color="Major Teaching",size="Average \n%6hr+ Away Home",title="B1 at 9(3+6) weeks after reopen v.s. B0 at 3 weeks after reopen")+
-  theme(axis.line = element_line(colour = "black"),
+team_theme <- theme(axis.line = element_line(colour = "black"),
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank(),
     panel.border = element_blank(),
-    panel.background = element_blank(),legend.position = "right")+geom_smooth(method = "lm", se=T, formula = y ~ x,alpha=0.1)+theme(legend.text = element_text(size=12),legend.title = element_text(size=12),axis.text = element_text(size=13),title=element_text(size=13))
+    panel.background = element_blank(),legend.position = "bottom",legend.box="vertical", legend.margin=margin())+theme(legend.text = element_text(size=12),legend.title = element_text(size=12),axis.text = element_text(size=13),title=element_text(size=13))
+```
 
-# B1-B0 vs B1
-B0B1_mobility%>%
-  mutate(B1diffB0 = B1-B0)%>%
-  ggplot(aes(x=B0,y=B1diffB0,group=major_teaching,color=major_teaching))+geom_point(alpha=0.7,aes(size=avg_full_work_prob))+geom_smooth(method = "lm", se=T, formula = y ~ x,alpha=0.1)+theme_minimal()+labs(y="B1-B0",color="Major Teaching",size="Average \n%6hr+ Away Home",title="B1-B0 v.s. B0",subtitle = "B1 at 9(3+6) weeks after reopen, B0 at 3 weeks after reopen")+
-  theme(axis.line = element_line(colour = "black"),
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank(),
-    panel.border = element_blank(),
-    panel.background = element_blank(),legend.position = "right")+theme(legend.text = element_text(size=12),legend.title = element_text(size=12),axis.text = element_text(size=13),title=element_text(size=13))
+
+```{r  message=FALSE, warning=FALSE}
+# max B1 vs B0
+B0B1%>%
+  ggplot(aes(x=avg3w_B0,y=max_B1,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg_full_work_prob,alpha=major_teaching_prop))+theme_minimal()+labs(color="Majority Teaching Method",size="Averaged \n%6hr+ Away Home",title="max B1 v.s. averaged B0 in 3 weeks after reopen",alpha="Size of Majority",y="Max B1", x= "Averaged B0 in 3 weeks")+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+team_theme+geom_vline(xintercept = 0, lty = 2)
+ggsave("maxB1vsAvgB0.png",width = 7, height = 7)
+
+# avgB1 vs avg3w_B0
+B0B1%>%
+  ggplot(aes(x=avg3w_B0,y=avg_B1,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg_full_work_prob,alpha=major_teaching_prop))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+labs(color="Majority Teaching Method",size="Averaged \n%6hr+ Away Home",title="Averaged B1 in Fall v.s. averaged B0 in 3 weeks after reopen",alpha="Size of Majority",y="Averaged B1 in Fall", x= "Averaged B0 in 3 weeks")+
+  team_theme+team_theme+geom_vline(xintercept = 0, lty = 2)
+ggsave("avgB1vsAvgB0.png",width = 7, height = 7)
 
 ```
 
