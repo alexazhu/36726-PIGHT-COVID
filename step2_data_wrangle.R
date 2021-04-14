@@ -23,7 +23,7 @@ teachingmethod_enroll <- OH_K12 %>%
 wide_teaching_enroll <- teachingmethod_enroll%>%
   dcast(county+county_enroll~teachingmethod,value.var ='prop_teachingmethod')
 wide_teaching_enroll[is.na(wide_teaching_enroll)] <- 0
-
+colnames(wide_teaching_enroll)[4:5] <- c("On_Premises", "Online_Only")
 # remove unknown,pending, other
 wide_teaching_enroll <- wide_teaching_enroll%>%
   select(-Unknown,-Other,-Pending)

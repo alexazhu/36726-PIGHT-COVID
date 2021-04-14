@@ -46,8 +46,8 @@ avgB1 <- cases_slope_teach%>%
   summarise(avg_B1 = mean(new.slope))
 
 ## avg3w_B0 ## average B0 of the first 3 weeks of school reopening 
-## avg2w_B0 ## OR average B0s between  2020-08-18 and +14days [before the rate bounce back around the dashed line]
-
+## avg1w_2w_B0 ## OR average B0s between  2020-08-18 -7days and +14days [before the rate bounce back around the dashed line]
+## avg3w_bf_B0 ## OR average B0s between  2020-08-18 -21days and 2020-08-18 [before the rate bounce back around the dashed line]
 
 avgB0 <- cases_slope_teach%>%
   group_by(COUNTY)%>%
@@ -55,8 +55,12 @@ avgB0 <- cases_slope_teach%>%
   summarise(avg3w_B0 = mean(new.slope))%>%
   left_join(cases_slope_teach%>%
   group_by(COUNTY)%>%
-  filter(DATE > as.Date("2020-08-18") & DATE<as.Date("2020-08-18")+14)%>%
-  summarise(avg2w_B0 = mean(new.slope)),by="COUNTY")
+  filter(DATE > as.Date("2020-08-18")-7 & DATE<as.Date("2020-08-18")+14)%>%
+  summarise(avg1w_2w_B0 = mean(new.slope)),by="COUNTY")%>%
+  left_join(cases_slope_teach%>%
+  group_by(COUNTY)%>%
+  filter(DATE < as.Date("2020-08-18") & DATE>=as.Date("2020-08-18")-21)%>%
+  summarise(avg3w_bf_B0 = mean(new.slope)),by="COUNTY")
 ```
 
 
@@ -172,6 +176,19 @@ ggsave("avgB1vsAvgB0.png",width = 7, height = 7)
 
 ```
 
+```{r}
+# avgB1 vs avg1w_2w_B0
+B0B1%>%
+  ggplot(aes(x=avg1w_2w_B0,y=max_B1,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg_full_work_prob,alpha=major_teaching_prop))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+labs(color="Majority Teaching Method",size="Averaged \n%6hr+ Away Home",title="Max B1 in Fall v.s.\n averaged B0 between 1 week before and 2 weeks after reopen",alpha="Size of Majority",y="Max B1 in Fall", x= "Averaged B0 in 3 weeks")+
+  team_theme+team_theme+geom_vline(xintercept = 0, lty = 2)
+ggsave("maxB1vsAvgB01w2w.png",width = 7, height = 7)
+
+# avgB1 vs avg1w_2w_B0
+B0B1%>%
+  ggplot(aes(x=avg1w_2w_B0,y=avg_B1,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg_full_work_prob,alpha=major_teaching_prop))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+labs(color="Majority Teaching Method",size="Averaged \n%6hr+ Away Home",title="Averaged B1 in Fall v.s.\n averaged B0 1 week before and 2 weeks after reopen",alpha="Size of Majority",y="Averaged B1 in Fall", x= "Averaged B0 in 3 weeks")+
+  team_theme+team_theme+geom_vline(xintercept = 0, lty = 2)
+ggsave("avgB1vsAvgB01w2w.png",width = 7, height = 7)
+```
 
 # Mobility
 
