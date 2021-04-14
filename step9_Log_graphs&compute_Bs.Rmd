@@ -23,24 +23,27 @@ cases <- cases%>%
 ### Fix negative values in NEW DEATHS
 
 ```{r}
-distri_neg <- function(newd){
-  for (i in 1:length(newd)) {
-    if(newd[i] < 0){
+cases[cases$NEWDEATHS<0,]
+#test case
+newdeaths <- cases[cases$COUNTY=='MORROW',]$NEWDEATHS
+distri_neg <- function(newdeaths){
+  for (i in 1:length(newdeaths)) {
+    if(newdeaths[i] < 0){
       if(i == 1){
         stop("problem")
       }
       j = i-1
-      while (newd[i]<0 && j>=1) {
-        if(newd[j]>0){
-          newd[j] = newd[j] - 1
-          newd[i] = newd[i] + 1
+      while (newdeaths[i]<0 && j>=1) {
+        if(newdeaths[j]>0){
+          newdeaths[j] = newdeaths[j] - 1
+          newdeaths[i] = newdeaths[i] + 1
         }
         j = j - 1
       }
     }
-    if(newd[i]<0){print("Still negative, need to double check")}
+    if(newdeaths[i]<0){print("Still negative, need to double check")}
     }
-  return(newd)
+  return(newdeaths)
 }
 # test out
 #distri_neg(newdeaths)
@@ -49,7 +52,8 @@ cases <- cases%>%
   group_by(COUNTY)%>%
   mutate(rev_NEWDEATHS = distri_neg(NEWDEATHS))
 # double check
-#cases[cases$rev_NEWDEATHS<0,]
+cases[cases$rev_NEWDEATHS<0,]
+# two counties have negative new deaths at the beginning
 ```
 
 
@@ -60,10 +64,10 @@ log_deaths_county_df <- cases %>%
   group_by(COUNTY) %>%
   mutate(log_tot_deaths = log(CUMDEATHS + 1),
          log_new_deaths = log(rev_NEWDEATHS + 1),
-         tot.smoothed.spline = smooth.spline(DATE,log_tot_deaths, cv = TRUE)$y,
-         new.smoothed.spline = smooth.spline(DATE,log_new_deaths, cv = TRUE)$y,
-         tot.slope = predict(smooth.spline(DATE,log_tot_deaths, cv = TRUE),deriv = 1)$y,
-         new.slope = predict(smooth.spline(DATE,log_new_deaths, cv = TRUE),deriv = 1)$y)
+         tot.smoothed.spline = smooth.spline(DATE,log_tot_deaths, df = 398/28)$y,
+         new.smoothed.spline = smooth.spline(DATE,log_new_deaths, df = 398/28)$y,
+         tot.slope = predict(smooth.spline(DATE,log_tot_deaths, df = 398/28),deriv = 1)$y,
+         new.slope = predict(smooth.spline(DATE,log_new_deaths, df = 398/28),deriv = 1)$y)
 #Want to order the counties by most Populous
 log_deaths_county_df$COUNTY <- factor(log_deaths_county_df$COUNTY,
                                       levels = levels(fct_reorder(log_deaths_county_df$COUNTY,                            log_deaths_county_df$POPULATION,max,.desc = TRUE)))
@@ -127,6 +131,24 @@ for(i in 1:10){
       facet_wrap_paginate(~COUNTY, ncol = 3, nrow = 3, page = i)+
       theme_bw() +
       labs(x = "Date", y = "Log( New Deaths + 1 )")+
+      theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=20,face="bold"),
+        strip.text.x = element_text(size = 16))
+  print(p)
+  cat("\n\n\\newpage\n")
+}
+```
+
+
+# Slopes of New Deaths
+
+```{r echo=FALSE, fig.height=14, fig.width=12, message=FALSE, warning=FALSE, results='asis'}
+for(i in 1:10){
+  p <- ggplot(log_deaths_county_df, aes(x = DATE, y = new.slope)) +
+      geom_line(size = 2, color = "red") +
+      facet_wrap_paginate(~COUNTY, ncol = 3, nrow = 3, page = i)+
+      theme_bw() +
+      labs(x = "Date", y = "Slopes of Log( New Deaths + 1 )")+
       theme(axis.text=element_text(size=12),
         axis.title=element_text(size=20,face="bold"),
         strip.text.x = element_text(size = 16))
