@@ -17,19 +17,22 @@ source("step2_data_wrangle.r")
 # read in cases data 
 # negative values of NEWDEATHS redistributed in rev_NEWDEATHS var
 # splines and slopes added
-cases_slope <- read.csv("county_splines.csv", header = T)
+cases_slope <- read.csv("county_splines.csv", header = T)%>%
+  select(COUNTY,DATE,POPULATION,CUMDEATHS,log_tot_deaths,tot.slope,NEWDEATHS,rev_NEWDEATHS,log_new_deaths,new.slope)
+
 cases_slope$DATE <- as.Date(cases_slope$DATE)
 
 # get majority teaching method wide_teaching_enroll
-cases_slope_teach <- cases_slope %>%
-  left_join(wide_teaching_enroll, by = c("COUNTY" = "county")) %>%
-  drop_na(major_teaching)%>%
-  left_join(county_open_teaching_enroll%>%
-  group_by(county)%>%
-  slice(which.max(opendate_teaching_county_prop)),by=c("COUNTY" = "county"))
+cases_slope_teach <-death_teaching%>%
+  select(-DATE,-POPULATION,-CUMDEATHS,-NEWDEATHS)%>%
+  distinct()%>%
+  right_join(cases_slope,by=c("COUNTY"))
+
+write.csv(cases_slope_teach,"cases_slope_teach.csv",row.names = F)
 
 ## ordering the teaching method factor to ensure the color order
 cases_slope_teach$major_teaching <- factor(cases_slope_teach$major_teaching,levels = c("On Premises","Hybrid","Online Only"))
+cases_slope_teach$DATE <- as.Date(cases_slope_teach$DATE)
 ```
 
 # Select Max B1 & B0
@@ -37,12 +40,12 @@ cases_slope_teach$major_teaching <- factor(cases_slope_teach$major_teaching,leve
 ```{r}
 maxB1 <- cases_slope_teach%>%
   group_by(COUNTY)%>%
-  filter(DATE > as.Date("2020-08-18") & DATE<as.Date("2020-12-15"))%>%
+  filter(DATE >= as.Date("2020-08-18") & DATE<=as.Date("2020-12-15"))%>%
   summarise(max_B1 = max(new.slope))
 
 avgB1 <- cases_slope_teach%>%
   group_by(COUNTY)%>%
-  filter(DATE > as.Date("2020-08-18") & DATE<as.Date("2020-12-15"))%>%
+  filter(DATE >= as.Date("2020-08-18") & DATE<=as.Date("2020-12-15"))%>%
   summarise(avg_B1 = mean(new.slope))
 
 ## avg3w_B0 ## average B0 of the first 3 weeks of school reopening 
@@ -51,7 +54,7 @@ avgB1 <- cases_slope_teach%>%
 
 avgB0 <- cases_slope_teach%>%
   group_by(COUNTY)%>%
-  filter(DATE > as.Date("2020-08-18") & DATE<as.Date(opendate)+21)%>%
+  filter(DATE > as.Date("2020-08-18") & DATE<as.Date(major_opendate)+21)%>%
   summarise(avg3w_B0 = mean(new.slope))%>%
   left_join(cases_slope_teach%>%
   group_by(COUNTY)%>%
@@ -68,6 +71,7 @@ avgB0 <- cases_slope_teach%>%
 
 ```{r}
 cases_slope_teach_agg <- cases_slope_teach %>%
+  drop_na(major_teaching)%>%
   group_by(DATE, major_teaching) %>%
   summarise(total_new_deaths = sum(rev_NEWDEATHS), .groups = "drop") %>%
   mutate(log_new_deaths = log(total_new_deaths + 1)) %>%
@@ -107,7 +111,6 @@ ggplot(cases_slope_teach_agg, aes(x = DATE, color = major_teaching)) +
   geom_vline(xintercept = week3_after_start, lty = 2) + 
   annotate("text",label = week3_after_start,
            x = week3_after_start, y = .05, hjust = 1.1)+ 
-  theme_bw() + 
   labs(x = "Date", y = "Exponential Growth Coefficient", 
        color = "Majority Teaching Method",
        caption = "Smoothing window set to every 4 weeks",
@@ -126,11 +129,9 @@ ggplot(cases_slope_teach_agg, aes(x = DATE, color = major_teaching)) +
 ```{r}
 # average full time work mobility in 6 weeks window
 avg_mobility <- case_mobility%>%
-  left_join(county_open_teaching_enroll%>%
-  group_by(county)%>%
-  slice(which.max(opendate_teaching_county_prop)),by=c("COUNTY" = "county"))%>%
+  left_join(major_reopening,by=c("COUNTY"))%>%
   group_by(COUNTY)%>%
-  filter(DATE >= as.Date(opendate) + 21 & DATE <= as.Date(opendate) + 63)%>%
+  filter(DATE >= as.Date(major_opendate) + 21 & DATE <= as.Date(major_opendate) + 63)%>%
   summarise(avg_full_work_prob = mean(full_work_prop_7d))
 
 # made major teaching method prop
@@ -165,7 +166,7 @@ team_theme <- theme(axis.line = element_line(colour = "black"),
 ```{r  message=FALSE, warning=FALSE}
 # max B1 vs B0
 B0B1%>%
-  ggplot(aes(x=avg3w_B0,y=max_B1,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg_full_work_prob,alpha=major_teaching_prop))+theme_minimal()+labs(color="Majority Teaching Method",size="Averaged \n%6hr+ Away Home",title="max B1 v.s. averaged B0 in 3 weeks after reopen",alpha="Size of Majority",y="Max B1", x= "Averaged B0 in 3 weeks")+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+team_theme+geom_vline(xintercept = 0, lty = 2)
+  ggplot(aes(x=avg3w_B0,y=max_B1,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg_full_work_prob,alpha=major_teaching_prop))+theme_minimal()+labs(color="Majority Teaching Method",size="Averaged \n%6hr+ Away Home",title="max B1 v.s. averaged B0 in 3 weeks after reopen",alpha="Size of Majority",y="Max B1", x= "Averaged B0 in 3 weeks")+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+geom_vline(xintercept = 0, lty = 2)+team_theme
 ggsave("maxB1vsAvgB0.png",width = 7, height = 7)
 
 # avgB1 vs avg3w_B0
@@ -197,10 +198,6 @@ Plot1.1: cumulative mobility per color (plot the 3 curves on the same plot).
 Aggregate counties by teaching method
 
 ```{r}
-major_opendate <- county_open_teaching_enroll%>%
-  group_by(county)%>%
-  slice(which.max(opendate_teaching_county_prop))%>%select(county,opendate)
-
 cum_mobility <- wide_teaching_enroll%>%
   left_join(case_mobility,by=c("county"="COUNTY"))%>%
   left_join(major_opendate,by="county")%>%

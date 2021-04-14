@@ -23,14 +23,13 @@ teachingmethod_enroll <- OH_K12 %>%
 wide_teaching_enroll <- teachingmethod_enroll%>%
   dcast(county+county_enroll~teachingmethod,value.var ='prop_teachingmethod')
 wide_teaching_enroll[is.na(wide_teaching_enroll)] <- 0
-colnames(wide_teaching_enroll)[4:5] <- c("On_Premises", "Online_Only")
 # remove unknown,pending, other
 wide_teaching_enroll <- wide_teaching_enroll%>%
   select(-Unknown,-Other,-Pending)
 
 # majority teaching method
 wide_teaching_enroll[,'major_teaching']<- apply(wide_teaching_enroll[,3:5], 1, function(x){names(which.max(x))})
-
+colnames(wide_teaching_enroll)[4:5] <- c("On_Premises", "Online_Only")
 
 ################## student mask ######################
 
@@ -117,11 +116,16 @@ state_open_teaching_enroll <- OH_K12%>%
 county_open_teaching_enroll <- OH_K12%>%
   distinct(county,leaid,teachingmethod,county_enroll,district_enroll,date)%>%
   group_by(county,date,teachingmethod)%>%
-  summarise(open_county_enroll = sum(district_enroll),opendate_teaching_county_prop = sum(district_enroll)/county_enroll)%>%
+  summarise(open_county_enroll = sum(district_enroll),opendate_prop = sum(district_enroll)/county_enroll)%>%
   rename(opendate = date)
 
-
-
+major_reopening <- county_open_teaching_enroll%>%
+  group_by(county)%>%
+  slice(which.max(opendate_prop))%>%
+  rename(COUNTY=county,major_opendate=opendate)%>%
+  distinct(COUNTY,major_opendate,opendate_prop)
+  
+ 
 ################## OH CASES ######################
 
 ##########
@@ -183,13 +187,13 @@ mobility <- parttime_work%>%
   left_join(bar%>%
               rename(bar_visit_by_pop = value),by = c("geo_value","time_value"))%>%
   select(geo_value,time_value,part_work_prop_7d,part_work_sample_size,
-         full_work_prop_7d,full_work_sample_size,
+         full_work_prop_7d,full_work_sample_size,full_work_std,
          res_visit_by_pop,bar_visit_by_pop)
 
 #write.csv(mobility,"mobility.csv")
 
 case_mobility <- mobility%>%
-  right_join(cases,by=c("geo_value"="FIPS","time_value"="DATE"))%>%
+  inner_join(cases,by=c("geo_value"="FIPS","time_value"="DATE"))%>%
   rename(FIPS = geo_value,DATE = time_value,)
 
 #write.csv(case_mobility,"case_mobility.csv")
@@ -261,4 +265,39 @@ long_teaching_mask <- teachingmethod_enroll%>%
 
 
 
+######## Valeries requested csv
+
+library(reshape2)
+newdeaths <- cases%>%
+  select(COUNTY,NEWDEATHS,DATE)%>%
+  drop_na(NEWDEATHS)%>%
+  mutate(DATE = as.character(DATE))%>%
+  dcast(COUNTY~DATE,value.var = "NEWDEATHS")
+
+write.csv(newdeaths,"newdeaths_ohio.csv",row.names = F)
+
+cumdeaths <- cases%>%
+  select(COUNTY,CUMDEATHS,DATE)%>%
+  drop_na(CUMDEATHS)%>%
+  mutate(DATE = as.character(DATE))%>%
+  dcast(COUNTY~DATE,value.var = "CUMDEATHS")
+
+write.csv(cumdeaths,"cumdeaths_ohio.csv",row.names = F)
+
+sixhrs_away <- case_mobility%>%
+  select(COUNTY,DATE,full_work_prop_7d)%>%
+  mutate(DATE = as.character(DATE))%>%
+  dcast(COUNTY~DATE,value.var = "full_work_prop_7d")
+
+write.csv(sixhrs_away,"sixhrs_away.csv",row.names = F)
+
+death_teaching <-  cases%>%
+  full_join(wide_teaching_enroll, by = c("COUNTY"="county"))%>%
+  select(COUNTY,DATE,POPULATION,CUMDEATHS,NEWDEATHS,Online_Only,Hybrid,On_Premises,major_teaching)
+
+death_teaching <- death_teaching%>%
+  left_join(ohio_profile%>%distinct(County,NCHS.Urban.Rural.Status),by=c("COUNTY"="County"))%>%
+  left_join(major_reopening,by=c("COUNTY"))
+
+write.csv(death_teaching,"deaths_teaching.csv",row.names = F)
 
