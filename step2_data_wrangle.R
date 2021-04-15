@@ -26,6 +26,14 @@ wide_teaching_enroll[is.na(wide_teaching_enroll)] <- 0
 # remove unknown,pending, other
 wide_teaching_enroll <- wide_teaching_enroll%>%
   select(-Unknown,-Other,-Pending)
+# made major teaching method prop
+wide_teaching_enroll <- wide_teaching_enroll%>%
+  mutate(major_teaching_prop = case_when(
+    major_teaching=="Online Only" ~ Online_Only,
+    major_teaching=="Hybrid" ~ Hybrid,
+    major_teaching=="On Premises" ~On_Premises,
+    TRUE~ 0
+  ))
 
 # majority teaching method
 wide_teaching_enroll[,'major_teaching']<- apply(wide_teaching_enroll[,3:5], 1, function(x){names(which.max(x))})
@@ -293,11 +301,11 @@ write.csv(sixhrs_away,"sixhrs_away.csv",row.names = F)
 
 death_teaching <-  cases%>%
   full_join(wide_teaching_enroll, by = c("COUNTY"="county"))%>%
-  select(COUNTY,DATE,POPULATION,CUMDEATHS,NEWDEATHS,Online_Only,Hybrid,On_Premises,major_teaching)
+  select(COUNTY,DATE,POPULATION,CUMDEATHS,NEWDEATHS,Online_Only,Hybrid,On_Premises,major_teaching,major_teaching_prop)
 
 death_teaching <- death_teaching%>%
-  left_join(ohio_profile%>%distinct(County,NCHS.Urban.Rural.Status),by=c("COUNTY"="County"))%>%
+  left_join(ohio_profile%>%distinct(County,NCHS.Urban.Rural.Status,Population.density),by=c("COUNTY"="County"))%>%
   left_join(major_reopening,by=c("COUNTY"))
 
-write.csv(death_teaching,"deaths_teaching.csv",row.names = F)
+write.csv(death_teaching,"phight_covid/deaths_teaching.csv",row.names = F)
 

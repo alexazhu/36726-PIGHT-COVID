@@ -66,6 +66,27 @@ avgB0 <- cases_slope_teach%>%
   summarise(avg3w_bf_B0 = mean(new.slope)),by="COUNTY")
 ```
 
+```{r}
+# average full time work mobility in 6 weeks window
+avg_mobility <- case_mobility%>%
+  left_join(major_reopening,by=c("COUNTY"))%>%
+  group_by(COUNTY)%>%
+  filter(DATE >= as.Date(major_opendate) + 21 & DATE <= as.Date(major_opendate) + 63)%>%
+  summarise(avg_full_work_prob = mean(full_work_prop_7d))
+
+
+
+#  B0 and B1
+B0B1 <- death_teaching%>%
+  distinct(COUNTY,POPULATION,NCHS.Urban.Rural.Status)%>%
+  left_join(maxB1,by="COUNTY")%>%
+  left_join(wide_teaching_enroll, by = c("COUNTY" = "county"))%>%
+  left_join(avgB1,by="COUNTY")%>%
+  left_join(avgB0,by="COUNTY")%>%
+  left_join(avg_mobility,by="COUNTY")
+## ordering the teaching method factor to ensure the color order
+B0B1$major_teaching <- factor(B0B1$major_teaching,levels = c("On Premises","Hybrid","Online Only"))
+```
 
 # Aggregate counties by teaching method
 
@@ -78,7 +99,12 @@ cases_slope_teach_agg <- cases_slope_teach %>%
   group_by(major_teaching) %>%
   mutate(smooth.spline = smooth.spline(DATE,log_new_deaths,df = 398/28)$y,
          B = predict(smooth.spline(DATE,log_new_deaths,df = 398/28),deriv = 1)$y)
+```
 
+
+Plot Bt
+
+``` {r}
 ggplot(cases_slope_teach_agg, aes(x = DATE, color = major_teaching)) +
   geom_point(aes(y = log_new_deaths), alpha = .3)+ 
   geom_line(aes(y = smooth.spline), size = 1) +
@@ -126,32 +152,8 @@ ggplot(cases_slope_teach_agg, aes(x = DATE, color = major_teaching)) +
 ```
 
 
-```{r}
-# average full time work mobility in 6 weeks window
-avg_mobility <- case_mobility%>%
-  left_join(major_reopening,by=c("COUNTY"))%>%
-  group_by(COUNTY)%>%
-  filter(DATE >= as.Date(major_opendate) + 21 & DATE <= as.Date(major_opendate) + 63)%>%
-  summarise(avg_full_work_prob = mean(full_work_prop_7d))
 
-# made major teaching method prop
-wide_teaching_enroll <- wide_teaching_enroll%>%
-  mutate(major_teaching_prop = case_when(
-    major_teaching=="Online Only" ~ Online_Only,
-    major_teaching=="Hybrid" ~ Hybrid,
-    major_teaching=="On Premises" ~On_Premises,
-    TRUE~ 0
-  ))
 
-#  B0 and B1
-B0B1 <- maxB1%>%
-  left_join(wide_teaching_enroll, by = c("COUNTY" = "county"))%>%
-  left_join(avgB1,by="COUNTY")%>%
-  left_join(avgB0,by="COUNTY")%>%
-  left_join(avg_mobility,by="COUNTY")
-## ordering the teaching method factor to ensure the color order
-B0B1$major_teaching <- factor(B0B1$major_teaching,levels = c("On Premises","Hybrid","Online Only"))
-```
 
 
 ```{r}
@@ -174,7 +176,6 @@ B0B1%>%
   ggplot(aes(x=avg3w_B0,y=avg_B1,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg_full_work_prob,alpha=major_teaching_prop))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+labs(color="Majority Teaching Method",size="Averaged \n%6hr+ Away Home",title="Averaged B1 in Fall v.s. averaged B0 in 3 weeks after reopen",alpha="Size of Majority",y="Averaged B1 in Fall", x= "Averaged B0 in 3 weeks")+
   team_theme+team_theme+geom_vline(xintercept = 0, lty = 2)
 ggsave("avgB1vsAvgB0.png",width = 7, height = 7)
-
 ```
 
 ```{r}
@@ -198,16 +199,20 @@ Plot1.1: cumulative mobility per color (plot the 3 curves on the same plot).
 Aggregate counties by teaching method
 
 ```{r}
-cum_mobility <- wide_teaching_enroll%>%
-  left_join(case_mobility,by=c("county"="COUNTY"))%>%
-  left_join(major_opendate,by="county")%>%
+cum_mobility <- case_mobility%>%
+  left_join(wide_teaching_enroll,by=c("COUNTY"="county"))%>%
+  left_join(major_reopening,by="COUNTY")%>%
   group_by(DATE,major_teaching)%>%
-  summarise(cum_full_work = sum(full_work_prop_7d*POPULATION),cum_full_work_prop = sum(full_work_prop_7d*POPULATION)/sum(POPULATION), .groups = "drop")%>%
+  summarise(daily_tot_teaching_full_work= sum(full_work_prop_7d*POPULATION),
+            tot_teaching_pop = sum(POPULATION), .groups = "drop")%>%
+  group_by(major_teaching)%>%
+  arrange(DATE)%>%
+  mutate(cum_full_work = cumsum(daily_tot_teaching_full_work),cum_full_work_prop = cumsum(daily_tot_teaching_full_work)/tot_teaching_pop)%>%
   mutate(shiftedDate = DATE+28) ## Shifted Dates!!!!!!!!!!!!
 
 cum_mobility$major_teaching <- factor(cum_mobility$major_teaching,levels = c("On Premises","Hybrid","Online Only"))
-
 ```
+
 
 ```{r}
 options(scipen=1000)
@@ -275,12 +280,12 @@ Aggregate counties by teaching method (cases_clean)
 Plot2.1: On Premises
 
 ```{r}
-cases_clean_teach_agg%>%
+cases_slope_teach_agg%>%
   filter(major_teaching=="On Premises")%>%
   inner_join(cum_mobility%>%filter(major_teaching=="On Premises"),by=c("DATE"="shiftedDate"))%>%
   ggplot(aes(x = DATE))+
   geom_line(aes(y = B),size = 1,color="red") +
-  geom_rect(data = cases_clean_teach_agg[1,],
+  geom_rect(data = cases_slope_teach_agg[1,],
             aes(xmin=as.Date("2020/08/18"), xmax=as.Date("2020/12/15"),
                 ymin=-Inf,ymax=Inf),
             color = NA,alpha=0.2, show.legend = F, fill = "orange") + theme_bw() + 
@@ -302,7 +307,7 @@ ggsave("time_series_on_premises.png",width = 7, height = 5)
 ```
 
 ```{r}
-cases_clean_teach_agg%>%
+cases_slope_teach_agg%>%
   filter(major_teaching=="On Premises")%>%
   inner_join(cum_mobility%>%filter(major_teaching=="On Premises"),by=c("DATE"="shiftedDate"))%>%
   ggplot(aes(y = B,x=cum_full_work))+ 
@@ -312,18 +317,18 @@ cases_clean_teach_agg%>%
   labs(x = "Cumulative Full-time Workers/Students", y = "Exponential Growth Coefficient", 
        title = "B ~ Cumulative Full-time Workers/Students 4 weeks forward\n On Premises")+theme(text = element_text(size=14),title = element_text(size=13))
 
-ggsave("lm_on_premises.jpg", width = 15, height = 6)
+#ggsave("lm_on_premises.jpg", width = 15, height = 6)
 ```
 
 
 Plot2.2: Hybrid
 ```{r}
-cases_clean_teach_agg%>%
+cases_slope_teach_agg%>%
   filter(major_teaching=="Hybrid")%>%
   inner_join(cum_mobility%>%filter(major_teaching=="Hybrid"),by=c("DATE"="shiftedDate"))%>%
   ggplot(aes(x = DATE))+
   geom_line(aes(y = B),size = 1,color="darkgreen") +
-  geom_rect(data = cases_clean_teach_agg[1,],
+  geom_rect(data = cases_slope_teach_agg[1,],
             aes(xmin=as.Date("2020/08/18"), xmax=as.Date("2020/12/15"),
                 ymin=-Inf,ymax=Inf),
             color = NA,alpha=0.2, show.legend = F, fill = "orange") + theme_bw() + 
@@ -346,8 +351,9 @@ cases_clean_teach_agg%>%
 
 #ggsave("time_series_hybrid.png",width = 7, height = 5)
 ```
+
 ```{r}
-cases_clean_teach_agg%>%
+cases_slope_teach_agg%>%
   filter(major_teaching=="Hybrid")%>%
   inner_join(cum_mobility%>%filter(major_teaching=="Hybrid"),by=c("DATE"="shiftedDate"))%>%
   ggplot(aes(y = B,x=cum_full_work))+ 
@@ -361,15 +367,16 @@ cases_clean_teach_agg%>%
 
 Plot2.3: Online Only
 ```{r}
-cases_clean_teach_agg%>%
+cases_slope_teach_agg%>%
   filter(major_teaching=="Online Only")%>%
-  inner_join(cum_mobility%>%filter(major_teaching=="Online Only"),by=c("DATE"="shiftedDate"))%>%
+  inner_join(cum_mobility%>%
+               filter(major_teaching=="Online Only"),by=c("DATE"="shiftedDate"))%>%
   ggplot(aes(x = DATE))+
   geom_line(aes(y = B),size = 1,color="darkblue") +
-  geom_rect(data = cases_clean_teach_agg[1,],
+  geom_rect(data = cases_slope_teach_agg[1,],
             aes(xmin=as.Date("2020/08/18"), xmax=as.Date("2020/12/15"),
                 ymin=-Inf,ymax=Inf),
-            color = NA,alpha=0.2, show.legend = F, fill = "orange") + theme_bw() + 
+            color = NA,alpha=0.2, show.legend = F, fill = "orange") + theme_bw() +
   labs(x = "Date", y = "Exponential Growth Coefficient", title="Online-only Counties\n Mobility 4 weeks forward",
        color = "Majority Teaching Method",
        caption = "Smoothing window set to every 4 weeks",
@@ -387,12 +394,12 @@ cases_clean_teach_agg%>%
     panel.border = element_blank(),
     panel.background = element_blank()) 
 
-ggsave("time_series_online_only.png",width = 7, height = 5)
+#ggsave("time_series_online_only.png",width = 7, height = 5)
 ```
 
 
 ```{r}
-cases_clean_teach_agg%>%
+cases_slope_teach_agg%>%
   filter(major_teaching=="Online Only")%>%
   inner_join(cum_mobility%>%filter(major_teaching=="Online Only"),by=c("DATE"="shiftedDate"))%>%
   ggplot(aes(y = B,x=cum_full_work))+ 
