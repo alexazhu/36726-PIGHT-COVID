@@ -696,6 +696,15 @@ na.omit(B0B1)%>%
 ggsave("facet2_maxB1vsavgmob.png",width = 7, height = 5)
 ```
 
+# Boxplot of Max B1 for different teaching method.
+
+```{r}
+na.omit(B0B1)%>%
+  ggplot(aes(x=major_teaching,y=max_B1,group=major_teaching,color=major_teaching))+geom_boxplot()+theme_minimal()+team_theme+
+  labs(y="Max B1",x="Teaching Method",title="Boxplot of Max B1 vs Teaching Method")
+ggsave("boxplotmaxB1vstmethod.png",width = 7, height = 5)
+```
+
 
 
 
