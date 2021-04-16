@@ -241,8 +241,14 @@ ggsave("maxB1vslogdeathsem.png",width = 7, height = 5)
 # Max B1 vs Log of cumulative Deaths - the cut date(end of semester)
 na.omit(B0B1)%>%
   left_join(death_semester1,by="COUNTY")%>%
-  ggplot(aes(x=log(end),y=max_B1,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg_full_work_prob))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+labs(y="Max B1",x="Log of total deaths",title="Max B1 vs Log of total deaths",size="Averaged \n%6hr+ Away Home")
+  ggplot(aes(x=log(end),y=max_B1,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg_full_work_prob))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+labs(y="Max B1",x="Log of total deaths",title="Max B1 vs Log of total deaths (until 2020-12-15)",size="Averaged \n%6hr+ Away Home")
 ggsave("maxB1vslogdeath.png",width = 7, height = 5)
+
+# Max B1 vs Log of cumulative Deaths - the cut date(2021-2-22)
+na.omit(B0B1)%>%
+  left_join(death_prop%>%select(COUNTY,CUMDEATHS),by="COUNTY")%>%
+  ggplot(aes(x=log(CUMDEATHS),y=max_B1,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg_full_work_prob))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+labs(y="Max B1",x="Log of total deaths",title="Max B1 vs Log of total deaths (until 2021-02-22)",size="Averaged \n%6hr+ Away Home")
+ggsave("maxB1vslogdeath_222.png",width = 7, height = 5)
 ```
 
 ```{r}
