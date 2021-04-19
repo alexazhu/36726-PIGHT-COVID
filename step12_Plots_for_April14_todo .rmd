@@ -711,6 +711,115 @@ na.omit(B0B1)%>%
 ggsave("boxplotmaxB1vstmethod.png",width = 7, height = 5)
 ```
 
+# Plot of population density
+```{r}
+na.omit(B0B1)%>%
+  left_join(ohio_profile%>%select(County,Population.density),
+            by=c("COUNTY"="County"))%>%
+  ggplot(aes(x=log(Population.density),y=max_B1,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg_full_work_prob))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+labs(y="Max B1",x="Log Population Density",title="Max B1 vs Log Population Density",size="Averaged %6hr+ Away Home",color="Major Teaching")
+ggsave("maxB1vsloglopden.png",width = 7, height = 5)
+```
+
+
+# Covid deaths during fall semester and death proportion during fall semester
+
+```{r}
+library(ggrepel)
+library(cowplot)
+library(sp)
+ohio_map <- map_data("county") %>%subset(region=="ohio")%>%
+  mutate(county=toupper(subregion))%>%select(long,lat,county,group)
+getLabelPoint <- # Returns a county-named list of label points
+function(county) {Polygon(county[c('long', 'lat')])@labpt}
+centroids = by(ohio_map, ohio_map$county, getLabelPoint)     # Returns list
+centroids2 <- do.call("rbind.data.frame", centroids)  # Convert to Data Frame
+centroids2$county = str_to_title(rownames(centroids))
+names(centroids2) <- c('clong', 'clat', "county")                 # Appropriate Header
+```
+
+```{r}
+death_prop%>%
+  left_join(ohio_map,by=c("COUNTY"='county'))%>%
+  ggplot() + geom_polygon(aes(x = long, y = lat, group=group,fill = CUMDEATHS), color = "gray") + coord_fixed(1.3) + theme_map() +
+scale_fill_distiller(palette = "OrRd",direction = 1)+labs(fill='Cumulative Deaths \nuntil 2021-02-22')+theme(legend.text = element_text(size=12),legend.title = element_text(size=12),legend.position = "bottom",legend.key.size = unit(2,"lines"))
+ggsave("cumdeath.png",width = 5, height = 5)
+
+death_prop%>%
+  left_join(ohio_map,by=c("COUNTY"='county'))%>%
+  ggplot() + geom_polygon(aes(x = long, y = lat, group=group,fill = death_per_1000), color = "gray") + coord_fixed(1.3) + theme_map() +
+scale_fill_distiller(palette = "OrRd",direction = 1)+labs(fill='Deaths per 1000 people \nuntil 2021-02-22')+theme(legend.text = element_text(size=12),legend.title = element_text(size=12),legend.position = "bottom",legend.key.size = unit(2,"lines"))
+ggsave("deathprop.png",width = 5, height = 5)
+```
+
+# 3 colored boxplots for response variable (total number of deaths before semester)/pop
+
+```{r}
+na.omit(death_semester1%>%
+  left_join(B0B1%>%select(COUNTY,major_teaching),by="COUNTY")%>%
+  left_join(death_prop%>%select(COUNTY,POPULATION),by="COUNTY")%>%
+  mutate(d_inci_before_sem=start/POPULATION*1000))%>%
+  ggplot(aes(x=major_teaching,y=d_inci_before_sem,group=major_teaching,color=major_teaching))+geom_boxplot()+theme_minimal()+team_theme+
+  labs(y="Death Incidence",x="Teaching Method",title="Boxplot of Death Incidence vs Teaching Method \n-(total number of deaths before semester)/pop*1000",color="Teaching Method")
+ggsave("boxplotmaxB1vstmethod_bfs.png",width = 7, height = 5)
+```
+
+
+# 3 colored boxplots for response variable (total number of deaths during semester)/pop
+
+```{r}
+na.omit(death_semester1%>%
+  left_join(B0B1%>%select(COUNTY,major_teaching),by="COUNTY")%>%
+  left_join(death_prop%>%select(COUNTY,POPULATION),by="COUNTY")%>%
+  mutate(d_inci_before_sem=death_semester/POPULATION*1000))%>%
+  ggplot(aes(x=major_teaching,y=d_inci_before_sem,group=major_teaching,color=major_teaching))+geom_boxplot()+theme_minimal()+team_theme+
+  labs(y="Death Incidence",x="Teaching Method",title="Boxplot of Death Incidence vs Teaching Method \n-(total number of deaths during semester)/pop*1000",color="Teaching Method")
+ggsave("boxplotmaxB1vstmethod_ds.png",width = 7, height = 5)
+```
+
+# Mobility map
+
+# Cumulative Deaths for micro counties
+
+```{r}
+micor<-cases%>%
+  mutate(cum_inci=CUMDEATHS/POPULATION*1000)%>%
+  left_join(ohio_profile%>%
+              select(County,NCHS.Urban.Rural.Status),
+            by=c("COUNTY"="County"))%>%
+  filter(NCHS.Urban.Rural.Status=="Micropolitan")%>%
+  left_join(B0B1%>%select(COUNTY,major_teaching),by="COUNTY")
+
+micor%>%
+  group_by(major_teaching,DATE)%>%
+  summarise(total_death=sum(CUMDEATHS),
+            total_pop=sum(POPULATION))%>%
+  mutate(cum_inci=total_death/total_pop*1000)%>%
+    ggplot(aes(x=DATE,y=cum_inci,group=major_teaching,color=major_teaching))+geom_line()+theme_minimal()+team_theme+labs(y="Cumulative Death Incidence",x="Date",title="Cumulative Death Incidence for Micropolitan Counties\n-(total number of deaths)/pop*1000",color="Teaching Method")+
+  annotate("rect", xmin=as.Date("2020/08/18"), xmax = as.Date("2020/12/15"), ymin = -Inf, ymax = Inf, fill = "orange", alpha = 0.2)+geom_vline(xintercept = as.Date("2020-11-12"), lty = 2)+geom_vline(xintercept = as.Date("2020-11-20"), lty = 2)
+ggsave("cum_incidence_micro.png",width = 7, height = 5)
+```
+
+
+
+# Overlaid plots of cumulative deaths for micro counties
+
+```{r}
+micor%>%
+  group_by(COUNTY,major_teaching,DATE)%>%
+  summarise(total_death=sum(CUMDEATHS),
+            total_pop=sum(POPULATION))%>%
+  mutate(cum_inci=total_death/total_pop*1000)%>%
+    ggplot(aes(x=DATE,y=cum_inci,group=COUNTY,color=major_teaching))+geom_line()+theme_minimal()+team_theme+labs(y="Cumulative Death Incidence",x="Date",title="Cumulative Death Incidence for Micropolitan Counties\n(Group by 22 Counties, Marked by Teaching Method)\n-(total number of deaths)/pop*1000",color="Teaching Method")+
+  annotate("rect", xmin=as.Date("2020/08/18"), xmax = as.Date("2020/12/15"), ymin = -Inf, ymax = Inf, fill = "orange", alpha = 0.2)
+ggsave("cum_incidence_micro2.png",width = 7, height = 5)
+```
+
+
+
+
+
+
+
 
 
 
