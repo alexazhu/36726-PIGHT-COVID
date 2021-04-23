@@ -73,6 +73,7 @@ log_deaths_county_df$COUNTY <- factor(log_deaths_county_df$COUNTY,
                                       levels = levels(fct_reorder(log_deaths_county_df$COUNTY,                            log_deaths_county_df$POPULATION,max,.desc = TRUE)))
 ```
 
+
 ```{r,include = FALSE}
 # This is a test chunk to see if it works on one county
 frank <- log_deaths_county_df %>%

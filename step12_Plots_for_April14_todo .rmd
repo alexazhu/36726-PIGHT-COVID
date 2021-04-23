@@ -817,7 +817,123 @@ ggsave("cum_incidence_micro2.png",width = 7, height = 5)
 
 
 
+```{r}
+ratio <- cases%>%
+  left_join(wide_teaching_enroll,by=c("COUNTY"="county"))%>%
+  drop_na(major_teaching)%>%
+  group_by(major_teaching,DATE)%>%
+  summarise(ratios = sum(CUMDEATHS)/sum(CUMCONFIRMED))
 
+ratio <- cases%>%
+  left_join(wide_teaching_enroll,by=c("COUNTY"="county"))%>%
+  drop_na(major_teaching)%>%
+  group_by(major_teaching,DATE)%>%
+  summarise(ratios = sum(CUMDEATHS*major_teaching_prop)/sum(CUMCONFIRMED*major_teaching_prop))
+
+ratio%>%
+  ggplot(aes(x=DATE,y=ratios,color=major_teaching))+geom_line(size=1)+
+  geom_rect(data = ratio[1,],
+            aes(xmin=as.Date("2020/08/18"), xmax=as.Date("2020/12/15"),
+                ymin=-Inf,ymax=Inf),
+            color = NA,alpha=0.2, show.legend = F, fill = "orange") + 
+  geom_vline(xintercept = as.Date("2020/11/24"), lty = 2) +
+  annotate("text",label = as.Date("2020/11/24"),
+           x = as.Date("2020/11/24"), y = .07, hjust = 1.1)+ 
+  labs(x = "Date", y = "Cumulative deaths/cases ratio", 
+       color = "Majority Teaching Method",
+       subtitle = "Yellow area represents the fall semester (08/18 - 12/15)") + 
+  theme(legend.position = "bottom")+
+  theme(axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank())+
+  theme(axis.text = element_text(size=15),axis.title=element_text(size=15),legend.text = element_text(size=13))
+
+cases%>%
+  left_join(wide_teaching_enroll,by=c("COUNTY"="county"))%>%
+  drop_na(major_teaching)%>%
+  group_by(major_teaching,DATE)%>%
+  summarise(cum=sum(CUMCONFIRMED*major_teaching_prop))%>%
+  ggplot(aes(x=DATE,y=log(cum),color=major_teaching))+geom_line(size=1)+
+    geom_vline(xintercept = as.Date("2020/11/24"), lty = 2) +
+  annotate("text",label = as.Date("2020/11/24"),
+           x = as.Date("2020/11/24"), y = .07, hjust = 1.1)+ 
+  labs(x = "Date", y = "Logged Cumulative Cases", 
+       color = "Majority Teaching Method",
+       subtitle = "Yellow area represents the fall semester (08/18 - 12/15)") + 
+  theme(legend.position = "bottom")+
+  theme(axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank())+
+  theme(axis.text = element_text(size=15),axis.title=element_text(size=15),legend.text = element_text(size=13))
+```
+
+```{r}
+library(ggpubr)
+teaching_profile <- ohio_profile%>%
+  inner_join(wide_teaching_enroll,by=c("County"="county"))
+teaching_profile$major_teaching <- factor(teaching_profile$major_teaching,levels = c("On Premises","Hybrid","Online Only"))
+library(PMCMRplus)
+require(DescTools)
+profile_major_teaching.aov <- aov(Percent.uninsured ~ major_teaching,data = teaching_profile)
+summary(profile_major_teaching.aov)
+
+# p-value of .012
+stat.test <- PostHocTest(profile_major_teaching.aov, method = "duncan")$major_teaching %>%
+  as.data.frame()%>%
+  rownames_to_column("group") %>%
+  separate(group,"-", into = c("group1","group2")) %>%
+  mutate(pval = round(pval,3),
+         p = case_when(pval <= .01~ "**",
+                       pval <= .05 ~ "*",
+                       TRUE ~ "NS"))%>%
+  select(group1, group2, pval, p)
+
+teaching_profile%>%
+  ggplot(aes(x=major_teaching,y=Percent.uninsured,color=major_teaching))+geom_boxplot()+
+  stat_compare_means(method = "anova")+ 
+  stat_pvalue_manual(stat.test, label = "p",y.position = 2.5, step.increase = 0.15)+
+  labs(x="Major Teaching Method",y="Percent of uninsured population")+
+  theme(legend.position = "bottom")+
+  theme(axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank())+
+  theme(axis.text = element_text(size=15),axis.title=element_text(size=15),legend.text = element_text(size=13))
+
+
+senior_major_teaching.aov <- aov(Percent.Population.65..yrs~ major_teaching,data = teaching_profile)
+
+summary(senior_major_teaching.aov)
+
+# p-value of .012
+stat.test <- PostHocTest(senior_major_teaching.aov, method = "duncan")$major_teaching %>%
+  as.data.frame()%>%
+  rownames_to_column("group") %>%
+  separate(group,"-", into = c("group1","group2")) %>%
+  mutate(pval = round(pval,3),
+         p = case_when(pval <= .01~ "**",
+                       pval <= .05 ~ "*",
+                       TRUE ~ "NS"))%>%
+  select(group1, group2, pval, p)
+
+teaching_profile%>%
+  ggplot(aes(x=major_teaching,y=Percent.Population.65..yrs,color=major_teaching))+geom_boxplot()+
+  stat_compare_means(method = "anova")+ 
+  stat_pvalue_manual(stat.test, label = "p",y.position = 2.5, step.increase = 0.15)+
+  labs(x="Major Teaching Method",y="Percent of 65+yrs population")+
+  theme(legend.position = "bottom")+
+  theme(axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank())+
+  theme(axis.text = element_text(size=15),axis.title=element_text(size=15),legend.text = element_text(size=13))
+```
 
 
 

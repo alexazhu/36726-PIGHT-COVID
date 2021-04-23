@@ -35,6 +35,177 @@ cases_slope_teach$major_teaching <- factor(cases_slope_teach$major_teaching,leve
 cases_slope_teach$DATE <- as.Date(cases_slope_teach$DATE)
 ```
 
+
+```{r}
+
+#### aggregate the rev_NEWDEATHS of the counties by color
+## then compute the smoother with 4 weeks window, and get the slopes B
+
+cases_slope_teach_agg <- cases_slope_teach %>%
+  drop_na(major_teaching)%>%
+  group_by(DATE, major_teaching) %>%
+  summarise(total_new_deaths = sum(rev_NEWDEATHS), .groups = "drop") %>%
+  mutate(log_new_deaths = log(total_new_deaths + 1)) %>%
+  group_by(major_teaching) %>%
+  mutate(smooth.spline = smooth.spline(DATE,log_new_deaths,df = 398/28)$y,
+         B = predict(smooth.spline(DATE,log_new_deaths,df = 398/28),deriv = 1)$y,B2 = predict(smooth.spline(DATE,log_new_deaths,df = 398/28),deriv = 2)$y)
+
+ggplot(cases_slope_teach_agg, aes(x = DATE, color = major_teaching)) +
+  geom_point(aes(y = log_new_deaths), alpha = .3)+ 
+  geom_line(aes(y = smooth.spline), size = 1) +
+  geom_rect(data = cases_slope_teach_agg[1,],
+            aes(xmin=as.Date("2020/08/18"), xmax=as.Date("2020/12/15"),
+                ymin=-Inf,ymax=Inf),
+            color = NA,alpha=0.2, show.legend = F, fill = "orange") + 
+  theme_bw() + 
+  labs(x = "Date", y = "Log ( New Deaths + 1 )", 
+       color = "Majority Teaching Method",
+       caption = "Smoothing window set to every 4 weeks",
+       subtitle = "Yellow area represents the fall semester (08/18 - 12/15)") + 
+  theme(legend.position = "bottom")+
+  theme(axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank())+
+  theme(axis.text = element_text(size=15),axis.title=element_text(size=15),legend.text = element_text(size=13))
+#ggsave("log_death_time_series.png",width = 7, height = 5)
+
+week3_after_start <- as.Date("2020/08/18") + 21
+
+ggplot(cases_slope_teach_agg, aes(x = DATE, color = major_teaching)) + 
+  geom_line(aes(y = B), size = 1) +
+  geom_rect(data = cases_slope_teach_agg[1,],
+            aes(xmin=as.Date("2020/08/18"), xmax=as.Date("2020/12/15"),
+                ymin=-Inf,ymax=Inf),
+            color = NA,alpha=0.2, show.legend = F, fill = "orange") +
+  geom_vline(xintercept = week3_after_start, lty = 2) + 
+  annotate("text",label = week3_after_start,
+           x = week3_after_start, y = .05, hjust = 1.1)+ 
+  labs(x = "Date", y = "Exponential Growth Coefficient", 
+       color = "Majority Teaching Method",
+       caption = "Smoothing window set to every 4 weeks",
+       subtitle = "Yellow area represents the fall semester (08/18 - 12/15)") + 
+  theme(legend.position = "bottom")+
+  theme(axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank())+
+  theme(axis.text = element_text(size=15),axis.title=element_text(size=15),legend.text = element_text(size=13))
+
+
+
+## derivative of B
+
+ggplot(cases_slope_teach_agg, aes(x = DATE, color = major_teaching)) + 
+  geom_line(aes(y = B2), size = 1) +
+  geom_rect(data = cases_slope_teach_agg[1,],
+            aes(xmin=as.Date("2020/08/18"), xmax=as.Date("2020/12/15"),
+                ymin=-Inf,ymax=Inf),
+            color = NA,alpha=0.2, show.legend = F, fill = "orange") +
+  geom_vline(xintercept = week3_after_start, lty = 2) + 
+  annotate("text",label = week3_after_start,
+           x = week3_after_start, y = .005, hjust = 1.1)+ 
+  labs(x = "Date", y = "2nd Derivative of Smoothing Splines", 
+       color = "Majority Teaching Method",
+       caption = "Smoothing window set to every 4 weeks",
+       subtitle = "Yellow area represents the fall semester (08/18 - 12/15)") + 
+  theme(legend.position = "bottom")+
+  theme(axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank())+
+  theme(axis.text = element_text(size=15),axis.title=element_text(size=15),legend.text = element_text(size=13))
+```
+
+```{r}
+
+#### aggregate the rev_NEWDEATHS of the counties by color
+## then compute the smoother with 4 weeks window, and get the slopes B
+
+cases_slope_teach_agg <- cases_slope_teach %>%
+  drop_na(major_teaching)%>%
+  filter(NCHS.Urban.Rural.Status=="Micropolitan")%>%
+  group_by(DATE, major_teaching) %>%
+  summarise(total_new_deaths = sum(rev_NEWDEATHS), .groups = "drop") %>%
+  mutate(log_new_deaths = log(total_new_deaths + 1)) %>%
+  group_by(major_teaching) %>%
+  mutate(smooth.spline = smooth.spline(DATE,log_new_deaths,df = 398/28)$y,
+         B = predict(smooth.spline(DATE,log_new_deaths,df = 398/28),deriv = 1)$y,B2 = predict(smooth.spline(DATE,log_new_deaths,df = 398/28),deriv = 2)$y)
+
+ggplot(cases_slope_teach_agg, aes(x = DATE, color = major_teaching)) +
+  geom_point(aes(y = log_new_deaths), alpha = .3)+ 
+  geom_line(aes(y = smooth.spline), size = 1) +
+  geom_rect(data = cases_slope_teach_agg[1,],
+            aes(xmin=as.Date("2020/08/18"), xmax=as.Date("2020/12/15"),
+                ymin=-Inf,ymax=Inf),
+            color = NA,alpha=0.2, show.legend = F, fill = "orange") + 
+  theme_bw() + 
+  labs(x = "Date", y = "Log ( New Deaths + 1 )", 
+       color = "Majority Teaching Method",
+       caption = "Smoothing window set to every 4 weeks",
+       subtitle = "Yellow area represents the fall semester (08/18 - 12/15)") + 
+  theme(legend.position = "bottom")+
+  theme(axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank())+
+  theme(axis.text = element_text(size=15),axis.title=element_text(size=15),legend.text = element_text(size=13))
+#ggsave("log_death_time_series.png",width = 7, height = 5)
+
+week3_after_start <- as.Date("2020/08/18") + 21
+
+ggplot(cases_slope_teach_agg, aes(x = DATE, color = major_teaching)) + 
+  geom_line(aes(y = B), size = 1) +
+  geom_rect(data = cases_slope_teach_agg[1,],
+            aes(xmin=as.Date("2020/08/18"), xmax=as.Date("2020/12/15"),
+                ymin=-Inf,ymax=Inf),
+            color = NA,alpha=0.2, show.legend = F, fill = "orange") +
+  geom_vline(xintercept = week3_after_start, lty = 2) + 
+  annotate("text",label = week3_after_start,
+           x = week3_after_start, y = .05, hjust = 1.1)+ 
+  labs(x = "Date", y = "Exponential Growth Coefficient", 
+       color = "Majority Teaching Method",
+       caption = "Smoothing window set to every 4 weeks",
+       subtitle = "Yellow area represents the fall semester (08/18 - 12/15)") + 
+  theme(legend.position = "bottom")+
+  theme(axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank())+
+  theme(axis.text = element_text(size=15),axis.title=element_text(size=15),legend.text = element_text(size=13))
+
+
+
+## derivative of B
+
+ggplot(cases_slope_teach_agg, aes(x = DATE, color = major_teaching)) + 
+  geom_line(aes(y = B2), size = 1) +
+  geom_rect(data = cases_slope_teach_agg[1,],
+            aes(xmin=as.Date("2020/08/18"), xmax=as.Date("2020/12/15"),
+                ymin=-Inf,ymax=Inf),
+            color = NA,alpha=0.2, show.legend = F, fill = "orange") +
+  geom_vline(xintercept = week3_after_start, lty = 2) + 
+  annotate("text",label = week3_after_start,
+           x = week3_after_start, y = .005, hjust = 1.1)+ 
+  labs(x = "Date", y = "2nd Derivative of Smoothing Splines", 
+       color = "Majority Teaching Method",
+       caption = "Smoothing window set to every 4 weeks",
+       subtitle = "Yellow area represents the fall semester (08/18 - 12/15)") + 
+  theme(legend.position = "bottom")+
+  theme(axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank())+
+  theme(axis.text = element_text(size=15),axis.title=element_text(size=15),legend.text = element_text(size=13))
+```
+
+
 # Select Max B1 & B0
 
 ```{r}

@@ -26,6 +26,11 @@ wide_teaching_enroll[is.na(wide_teaching_enroll)] <- 0
 # remove unknown,pending, other
 wide_teaching_enroll <- wide_teaching_enroll%>%
   select(-Unknown,-Other,-Pending)
+
+# majority teaching method
+wide_teaching_enroll[,'major_teaching']<- apply(wide_teaching_enroll[,3:5], 1, function(x){names(which.max(x))})
+colnames(wide_teaching_enroll)[4:5] <- c("On_Premises", "Online_Only")
+
 # made major teaching method prop
 wide_teaching_enroll <- wide_teaching_enroll%>%
   mutate(major_teaching_prop = case_when(
@@ -34,10 +39,6 @@ wide_teaching_enroll <- wide_teaching_enroll%>%
     major_teaching=="On Premises" ~On_Premises,
     TRUE~ 0
   ))
-
-# majority teaching method
-wide_teaching_enroll[,'major_teaching']<- apply(wide_teaching_enroll[,3:5], 1, function(x){names(which.max(x))})
-colnames(wide_teaching_enroll)[4:5] <- c("On_Premises", "Online_Only")
 
 ################## student mask ######################
 

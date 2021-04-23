@@ -210,13 +210,12 @@ opendate_cases <- case_policy_wide%>%
   inner_join(major_reopening%>%select(COUNTY,major_opendate),by=c('COUNTY'))
 
 
-
 # Box Plots in Fall semester
 library(PMCMRplus)
 require(DescTools)
 
 fall_cases <- opendate_cases %>%
-  filter(DATE >= opendategrouped & DATE <= as.Date("2020/12/15")) %>%
+  filter(DATE >= major_opendate & DATE <= as.Date("2020/12/15")) %>%
   group_by(COUNTY) %>%
   arrange(DATE) %>%
   filter(row_number()==1 | row_number()==n()) %>%
@@ -257,8 +256,8 @@ ggplot(fall_cases,aes(y = death_incidence_per_1000, x = major_teaching)) +
 
 # Assign 3 key windows
 interval_cases <- opendate_cases %>%
-  mutate(interval = case_when(DATE >= opendategrouped &
-                     DATE <= opendategrouped + 21 ~ "Start of School - 3 weeks after Start of School",
+  mutate(interval = case_when(DATE >= as.Date(major_opendate) &
+                     DATE <= as.Date(major_opendate) + 21 ~ "Start of School - 3 weeks after Start of School",
                    DATE >= as.Date("2020/11/24") - 10 & 
                      DATE<= as.Date("2020/11/24") + 11 ~ "11/14/2020 - 12/05/2020",
                    DATE >= as.Date("2020/12/15") + 21 &
@@ -320,6 +319,7 @@ lag_cases <- case_mobility %>%
             .groups = "drop")
 
 peak.date <- as.Date("2020-12-23")
+
 ggplot(lag_cases,aes(x = DATE, y = death_prop_inc*1000, 
                      group = major_teaching)) + 
   geom_line(na.rm = T, aes(color = major_teaching)) +
@@ -338,8 +338,7 @@ ggplot(lag_cases,aes(x = DATE, y = death_prop_inc*1000,
        subtitle = "Yellow area represents Fall Semester",
        caption = "Increase compared to 3 Week Lag",
        color = "Majority Teaching Method") + 
-  scale_y_continuous(labels = comma) + 
-  theme(legend.position = "bottom")+ opts(panel.background = theme_rect(fill='white', colour='black')) + opts(panel.grid.major = none, panel.grid.minor = none)
+  scale_y_continuous(labels = comma)
 
 ```
 
@@ -351,17 +350,6 @@ library(sp)
 ohio_map <- map_data("county") %>%subset(region=="ohio")%>%
   mutate(county=toupper(subregion))%>%select(long,lat,county,group)
 
-
-getLabelPoint <- # Returns a county-named list of label points
-function(county) {Polygon(county[c('long', 'lat')])@labpt}
-centroids = by(ohio_map, ohio_map$county, getLabelPoint)     # Returns list
-centroids2 <- do.call("rbind.data.frame", centroids)  # Convert to Data Frame
-centroids2$county = str_to_title(rownames(centroids))
-names(centroids2) <- c('clong', 'clat', "county")                 # Appropriate Header
-```
-
-
-```{r}
 # create map plots
 wide_teaching_enroll%>%
   left_join(ohio_map,by='county')%>%
@@ -548,45 +536,8 @@ state_cases%>%
 
 
 
-```{r}
-# plot death prop over time by the majority teaching method
-wide_teaching_enroll%>%
-  left_join(case_mobility,by=c('county'='COUNTY'))%>%
-  filter(major_teaching%in%c('Online Only','On Premises','Hybrid'))%>%
-  group_by(DATE, major_teaching) %>%
-  summarise(total_deaths = sum(CUMDEATHS),
-            total_pop = sum(POPULATION),
-            death_prop = total_deaths/total_pop,
-            full_work_prop = sum(full_work_prop_7d*POPULATION)/sum(POPULATION),
-            part_work_prop = sum(part_work_prop_7d*POPULATION)/sum(POPULATION),
-            res_visit_prop = sum(res_visit_by_pop),
-            bar_visit_prop = sum(bar_visit_by_pop),
-            .groups = "drop") %>%
-  ggplot(aes(x = DATE, y = death_prop*1000, group = major_teaching))+
-  geom_rect(data=case_policy_wide[1,],
-            aes(xmin=as.Date("2020/08/18"), xmax=as.Date("2020/12/12"),
-                ymin=-Inf,ymax=Inf),
-            color = NA,alpha=0.2, show.legend = F, fill = "orange") + 
-  geom_point(aes(size=full_work_prop,color = major_teaching),alpha = .1) + 
-  geom_vline(xintercept = date.intercept, linetype = "dashed") + 
-  annotate("text",x = date.intercept,y = 1.5,
-           label = date.intercept,
-           hjust = 1.1) + 
-  theme_bw() + 
-  labs(x = "Date", y = "Cumulative Death Incidence / 1,000 people",
-       color = "Majority Teaching Method") + 
-  theme(legend.position = "bottom")+theme(legend.title = element_text(size=13),legend.text = element_text(size=13),axis.title = element_text(size=15),axis.text = element_text(size=15),legend.background = element_rect(fill = alpha("orange",0.0)),legend.key.size = unit(1.4,"lines"),title = element_text(size=12.9))
-```
-
 
 ```{r}
-library(ggrepel)
-library(cowplot)
-library(sp)
-ohio_map <- map_data("county") %>%subset(region=="ohio")%>%
-  mutate(county=toupper(subregion))%>%select(long,lat,county,group)
-
-
 # create map plots
 ohio_profile%>%
   left_join(ohio_map,by=c('County'='county'))%>%
@@ -601,7 +552,6 @@ names(ohio_profile)
 # create map plots
 ohio_profile%>%
   left_join(ohio_map,by=c('County'='county'))%>%
-  ggplot() + geom_polygon(aes(x = long, y = lat, group = group, fill = as.factor(Metropolitan.Status)), color = "gray") + coord_fixed(1.3) + theme_map() +labs(fill='Metropolitan Status')+theme(legend.text = element_text(size=20),legend.title = element_text(size=20))+scale_fill_manual(values = c("tomato3","seashell"))
-+theme(legend.title = element_text(size=13),legend.text = element_text(size=13),legend.key.size = unit(1.4,"lines"))
+  ggplot() + geom_polygon(aes(x = long, y = lat, group = group, fill = as.factor(Metropolitan.Status)), color = "gray") + coord_fixed(1.3) + theme_map() +labs(fill='Metropolitan Status')+theme(legend.text = element_text(size=20),legend.title = element_text(size=20))+scale_fill_manual(values = c("tomato3","seashell"))+theme(legend.title = element_text(size=13),legend.text = element_text(size=13),legend.key.size = unit(1.4,"lines"))
 
 ```
