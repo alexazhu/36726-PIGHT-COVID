@@ -1,5 +1,5 @@
 ---
-title: "Slopes of the time series"
+title: "Slopes of the time series, 24 days forward"
 author: "Cheyenne, Ziyan"
 date: "4/11/2021"
 output: pdf_document
@@ -8,6 +8,11 @@ output: pdf_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
+Notes:
+
+The 1st derivative of log new deaths+1 we observed on date T corresponds to the death growth rate B happend on date T-24.
+
 
 # Load in the spline slopes
 
@@ -18,14 +23,20 @@ source("step2_data_wrangle.r")
 # splines and slopes added
 cases_slope <- read.csv("county_splines.csv", header = T)%>%
   select(COUNTY,DATE,POPULATION,CUMDEATHS,log_tot_deaths,tot.slope,NEWDEATHS,rev_NEWDEATHS,log_new_deaths,new.slope)
-cases_slope$DATE <- as.Date(cases_slope$DATE)
+# SHIFT THE DATE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+cases_slope$DATE <- as.Date(cases_slope$DATE)-24
+
 # get majority teaching method wide_teaching_enroll
 cases_slope_teach <-death_teaching%>%
   select(-DATE,-POPULATION,-CUMDEATHS,-NEWDEATHS)%>%
   distinct()%>%
-  right_join(cases_slope,by=c("COUNTY"))
+  right_join(cases_slope,by=c("COUNTY"))%>%
+  filter(DATE>as.Date("2020-01-23"))
+
 write.csv(cases_slope_teach,"cases_slope_teach.csv",row.names = F)
+
 ## ordering the teaching method factor to ensure the color order
+
 cases_slope_teach$major_teaching <- factor(cases_slope_teach$major_teaching,levels = c("On Premises","Hybrid","Online Only"))
 cases_slope_teach$DATE <- as.Date(cases_slope_teach$DATE)
 ```
@@ -37,6 +48,7 @@ maxB1 <- cases_slope_teach%>%
   group_by(COUNTY)%>%
   filter(DATE >= as.Date("2020-08-18") & DATE<=as.Date("2020-12-15"))%>%
   summarise(max_B1 = max(new.slope))
+
 avgB1 <- cases_slope_teach%>%
   group_by(COUNTY)%>%
   filter(DATE >= as.Date("2020-08-18") & DATE<=as.Date("2020-12-15"))%>%
@@ -70,6 +82,8 @@ cases_slope_teach_agg <- cases_slope_teach %>%
   group_by(major_teaching) %>%
   mutate(smooth.spline = smooth.spline(DATE,log_new_deaths,df = 398/28)$y,
          B = predict(smooth.spline(DATE,log_new_deaths,df = 398/28),deriv = 1)$y)
+
+
 ggplot(cases_slope_teach_agg, aes(x = DATE, color = major_teaching)) +
   geom_point(aes(y = log_new_deaths), alpha = .3)+ 
   geom_line(aes(y = smooth.spline), size = 1) +
@@ -82,6 +96,12 @@ ggplot(cases_slope_teach_agg, aes(x = DATE, color = major_teaching)) +
        color = "Majority Teaching Method",
        caption = "Smoothing window set to every 4 weeks",
        subtitle = "Yellow area represents the fall semester (08/18 - 12/15)") + 
+  geom_vline(xintercept = week3_after_start, lty = 2) + 
+  annotate("text",label = "3 Weeks After",
+           x = week3_after_start, y = 4, hjust = 1.1)+ 
+  geom_vline(xintercept = as.Date("2020/08/18")+42, lty = 2) + 
+  annotate("text",label = "6 Weeks After",
+           x = as.Date("2020/08/18")+62, y = 4.7, hjust = 1.3)+ 
   theme(legend.position = "bottom")+
   theme(axis.line = element_line(colour = "black"),
     panel.grid.major = element_blank(),
@@ -89,7 +109,10 @@ ggplot(cases_slope_teach_agg, aes(x = DATE, color = major_teaching)) +
     panel.border = element_blank(),
     panel.background = element_blank())+
   theme(axis.text = element_text(size=15),axis.title=element_text(size=15),legend.text = element_text(size=13))
+
 #ggsave("log_death_time_series.png",width = 7, height = 5)
+
+
 week3_after_start <- as.Date("2020/08/18") + 21
 ggplot(cases_slope_teach_agg, aes(x = DATE, color = major_teaching)) + 
   geom_line(aes(y = B), size = 1) +
@@ -98,8 +121,11 @@ ggplot(cases_slope_teach_agg, aes(x = DATE, color = major_teaching)) +
                 ymin=-Inf,ymax=Inf),
             color = NA,alpha=0.2, show.legend = F, fill = "orange") +
   geom_vline(xintercept = week3_after_start, lty = 2) + 
-  annotate("text",label = week3_after_start,
+  annotate("text",label = "3 Weeks After",
            x = week3_after_start, y = .05, hjust = 1.1)+ 
+  geom_vline(xintercept = as.Date("2020/08/18")+42, lty = 2) + 
+  annotate("text",label = "6 Weeks After",
+           x = as.Date("2020/08/18")+130, y = .06, hjust = 1.3)+ 
   labs(x = "Date", y = "Exponential Growth Coefficient", 
        color = "Majority Teaching Method",
        caption = "Smoothing window set to every 4 weeks",
@@ -112,6 +138,11 @@ ggplot(cases_slope_teach_agg, aes(x = DATE, color = major_teaching)) +
     panel.background = element_blank())+
   theme(axis.text = element_text(size=15),axis.title=element_text(size=15),legend.text = element_text(size=13))
 #ggsave("egc_time_series.png",width = 7, height = 5)
+```
+
+```{r}
+# SHIFT the DATE for mobility as well: mobility a week ago may impact the infections number now
+case_mobility$DATE <- case_mobility$DATE - 7 ## WARNING: only run this once
 ```
 
 
@@ -162,7 +193,7 @@ B0B1%>%
 ggsave("avgB1vsAvgB0.png",width = 7, height = 7)
 # maxB1 vs average B1
 na.omit(B0B1)%>%
-  ggplot(aes(x=avg_B1,y=max_B1,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg_full_work_prob,alpha=major_teaching_prop))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+labs(color="Majority Teaching Method",size="Averaged \n%6hr+ Away Home",title="Max B1 vs Average B1",alpha="Size of Majority",y="Max B1 in Fall", x= "Averaged B1 in Fall")+
+  ggplot(aes(x=avg_B1,y=max_B1,group=major_teaching,color=major_teaching))+geom_point(aes(size=On_Premises,alpha=On_Premises))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+labs(color="Majority Teaching Method",size="Percent of On-premises",title="Max B1 vs Average B1",alpha="Percent of On-premises",y="Max B1 in Fall", x= "Averaged B1 in Fall")+
   team_theme+team_theme+geom_vline(xintercept = 0, lty = 2)
 ggsave("maxB1vsavgB1.png",width = 7, height = 5)
 ```
@@ -186,11 +217,14 @@ ggsave("avgB1vsAvgB01w2w.png",width = 7, height = 7)
 county_population<-cases%>%distinct(COUNTY,POPULATION)
 na.omit(B0B1)%>%
   left_join(county_population,by="COUNTY")%>%
-  ggplot(aes(x=POPULATION,y=max_B1,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg_full_work_prob))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+team_theme+geom_vline(xintercept = 0, lty = 2)+labs(y="Max B1",x="Population",title="Max B1 vs Population")
+  ggplot(aes(x=POPULATION,y=max_B1,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg_full_work_prob,alpha=avg_full_work_prob))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+team_theme+geom_vline(xintercept = 0, lty = 2)+labs(y="Max B1",x="Population",title="Max B1 vs Population",color="Majority Teaching Method",size = "Averaged \n%6hr+ Away Home",alpha= "Averaged \n%6hr+ Away Home" )
+
 # Max B1 vs Log of Population
 na.omit(B0B1)%>%
   left_join(county_population,by="COUNTY")%>%
-  ggplot(aes(x=log(POPULATION),y=max_B1,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg_full_work_prob))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+team_theme+labs(y="Max B1",x="Log of Population",title="Max B1 vs Log of Population",size="Averaged \n%6hr+ Away Home")
+  ggplot(aes(x=log(POPULATION),y=max_B1,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg_full_work_prob,alpha=avg_full_work_prob))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+team_theme+labs(y="Max B1",x="Log of Population",title="Max B1 vs Log of Population",color="Majority Teaching Method",size = "Averaged \n%6hr+ Away Home",alpha= "Averaged \n%6hr+ Away Home" )
+
+
 ggsave("maxB1vslogpop.png",width = 7, height = 5)
 ```
 

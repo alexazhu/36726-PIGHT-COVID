@@ -310,3 +310,10 @@ death_teaching <- death_teaching%>%
 
 write.csv(death_teaching,"phight_covid/deaths_teaching.csv",row.names = F)
 
+
+death_teaching%>%
+  filter(major_teaching=="On Premises",NCHS.Urban.Rural.Status=="Micropolitan")%>%
+  select(COUNTY,)
+
+
+
