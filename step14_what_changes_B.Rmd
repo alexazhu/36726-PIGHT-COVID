@@ -84,9 +84,23 @@ B_diff%>%
   scale_fill_brewer(palette = "Reds",direction = -1)  
 ```
 
+## Redo the plots but only with Micro counties
+
+```{r}
+## Filter only the micro counties
+B_diff_micro <- B_diff%>%
+  drop_na(major_teaching)%>%
+  filter(NCHS.Urban.Rural.Status=="Micropolitan")
+
+B_diff_micro%>%
+  ggplot(aes(x=log(Population.density),y=new.slope.diff,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg3w_full_work_prob,alpha=avg3w_full_work_prob))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+team_theme+labs(y="Max B1",x="Log of Population",title="B1-B0 vs Log of Population Density\nOnly Micropolitan Counties",color="Majority Teaching Method",size = "3w~6w\nAveraged %6hr+ Away Home",alpha= "3w~6w\nAveraged %6hr+ Away Home" )
 
 
 
+B_diff_micro%>%
+  ggplot(aes(x=avg3w_full_work_prob,y=new.slope.diff,group=major_teaching,color=major_teaching))+geom_point(aes(size=log(Population.density),alpha=log(Population.density)))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+labs(y="Max B1",x="Average mobility proportion during fall semester",title="B1-B0 vs Average full mobility proportion in 3w~6w\n Averaged %6hr+ Away Home\nOnly Micropolitan Counties",size="Log of Population Density",alpha="Log of Population Density",fill="Majority Teaching Method")
+
+```
 
 
 
