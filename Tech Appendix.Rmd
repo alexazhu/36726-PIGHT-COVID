@@ -267,34 +267,43 @@ ggplot(fall_cases,aes(y = death_incidence_per_1000, x = major_teaching)) +
 # Appendix 3: Exponential growth model
 
 ## Data process
+
 ```{r}
 cases_slope <- read.csv("county_splines.csv", header = T)%>%
-  select(COUNTY,DATE,POPULATION,CUMDEATHS,log_tot_deaths,
-         tot.slope,NEWDEATHS,rev_NEWDEATHS,log_new_deaths,new.slope)
-cases_slope$DATE <- as.Date(cases_slope$DATE)
+  select(COUNTY,DATE,POPULATION,CUMDEATHS,log_tot_deaths,tot.slope,NEWDEATHS,rev_NEWDEATHS,log_new_deaths,new.slope)
+# SHIFT THE DATE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+cases_slope$DATE <- as.Date(cases_slope$DATE)-24
+
 # get majority teaching method wide_teaching_enroll
 cases_slope_teach <-death_teaching%>%
   select(-DATE,-POPULATION,-CUMDEATHS,-NEWDEATHS)%>%
   distinct()%>%
-  right_join(cases_slope,by=c("COUNTY"))
+  right_join(cases_slope,by=c("COUNTY"))%>%
+  filter(DATE>as.Date("2020-01-23"))
+
 write.csv(cases_slope_teach,"cases_slope_teach.csv",row.names = F)
+
 ## ordering the teaching method factor to ensure the color order
-cases_slope_teach$major_teaching <- factor(cases_slope_teach$major_teaching,
-                                           levels = c("On Premises","Hybrid","Online Only"))
+
+cases_slope_teach$major_teaching <- factor(cases_slope_teach$major_teaching,levels = c("On Premises","Hybrid","Online Only"))
 cases_slope_teach$DATE <- as.Date(cases_slope_teach$DATE)
+```
+
+# Select Max B1 & B0
+
+```{r}
 maxB1 <- cases_slope_teach%>%
   group_by(COUNTY)%>%
   filter(DATE >= as.Date("2020-08-18") & DATE<=as.Date("2020-12-15"))%>%
   summarise(max_B1 = max(new.slope))
+
 avgB1 <- cases_slope_teach%>%
   group_by(COUNTY)%>%
   filter(DATE >= as.Date("2020-08-18") & DATE<=as.Date("2020-12-15"))%>%
   summarise(avg_B1 = mean(new.slope))
 ## avg3w_B0 ## average B0 of the first 3 weeks of school reopening 
-## avg1w_2w_B0 ## OR average B0s between  2020-08-18 -7days and +14days 
-##[before the rate bounce back around the dashed line]
-## avg3w_bf_B0 ## OR average B0s between  2020-08-18 -21days and 2020-08-18 
-##[before the rate bounce back around the dashed line]
+## avg1w_2w_B0 ## OR average B0s between  2020-08-18 -7days and +14days [before the rate bounce back around the dashed line]
+## avg3w_bf_B0 ## OR average B0s between  2020-08-18 -21days and 2020-08-18 [before the rate bounce back around the dashed line]
 avgB0 <- cases_slope_teach%>%
   group_by(COUNTY)%>%
   filter(DATE > as.Date("2020-08-18") & DATE<as.Date(major_opendate)+21)%>%
@@ -307,6 +316,23 @@ avgB0 <- cases_slope_teach%>%
   group_by(COUNTY)%>%
   filter(DATE < as.Date("2020-08-18") & DATE>=as.Date("2020-08-18")-21)%>%
   summarise(avg3w_bf_B0 = mean(new.slope)),by="COUNTY")
+
+#  B0 and B1
+B0B1 <- death_teaching%>%
+  distinct(COUNTY,POPULATION,NCHS.Urban.Rural.Status,Population.density)%>%
+  left_join(maxB1,by="COUNTY")%>%
+  left_join(wide_teaching_enroll, by = c("COUNTY" = "county"))%>%
+  left_join(avgB1,by="COUNTY")%>%
+  left_join(avgB0,by="COUNTY")%>%
+  left_join(avg_mobility,by="COUNTY")
+## ordering the teaching method factor to ensure the color order
+B0B1$major_teaching <- factor(B0B1$major_teaching,levels = c("On Premises","Hybrid","Online Only"))
+```
+
+
+# Aggregate counties by teaching method
+
+```{r}
 cases_slope_teach_agg <- cases_slope_teach %>%
   drop_na(major_teaching)%>%
   group_by(DATE, major_teaching) %>%
@@ -314,8 +340,37 @@ cases_slope_teach_agg <- cases_slope_teach %>%
   mutate(log_new_deaths = log(total_new_deaths + 1)) %>%
   group_by(major_teaching) %>%
   mutate(smooth.spline = smooth.spline(DATE,log_new_deaths,df = 398/28)$y,
-         B = predict(smooth.spline(DATE,log_new_deaths,df = 398/28),deriv = 1)$y)
+         B = predict(smooth.spline(DATE,log_new_deaths,df = 398/28),deriv = 1)$y,B2 = predict(smooth.spline(DATE,log_new_deaths,df = 398/28),deriv = 2)$y)
+
+
+ggplot(cases_slope_teach_agg, aes(x = DATE, color = major_teaching)) +
+  geom_point(aes(y = log_new_deaths), alpha = .3)+ 
+  geom_line(aes(y = smooth.spline), size = 1) +
+  geom_rect(data = cases_slope_teach_agg[1,],
+            aes(xmin=as.Date("2020/08/18"), xmax=as.Date("2020/12/15"),
+                ymin=-Inf,ymax=Inf),
+            color = NA,alpha=0.2, show.legend = F, fill = "orange") + 
+  theme_bw() + 
+  labs(x = "Date", y = "Log ( New Deaths + 1 )", 
+       color = "Majority Teaching Method",
+       caption = "Smoothing window set to every 4 weeks",
+       subtitle = "Yellow area represents the fall semester (08/18 - 12/15)") + 
+  geom_vline(xintercept = week3_after_start, lty = 2) + 
+  annotate("text",label = "3 Weeks After",
+           x = week3_after_start, y = 4, hjust = 1.1)+ 
+  geom_vline(xintercept = as.Date("2020/08/18")+42, lty = 2) + 
+  annotate("text",label = "6 Weeks After",
+           x = as.Date("2020/08/18")+62, y = 4.7, hjust = 1.3)+ 
+  theme(legend.position = "bottom")+
+  theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank())+
+  theme(axis.text = element_text(size=15),axis.title=element_text(size=15),legend.text = element_text(size=13))
+
 week3_after_start <- as.Date("2020/08/18") + 21
+
 ggplot(cases_slope_teach_agg, aes(x = DATE, color = major_teaching)) + 
   geom_line(aes(y = B), size = 1) +
   geom_rect(data = cases_slope_teach_agg[1,],
@@ -323,8 +378,11 @@ ggplot(cases_slope_teach_agg, aes(x = DATE, color = major_teaching)) +
                 ymin=-Inf,ymax=Inf),
             color = NA,alpha=0.2, show.legend = F, fill = "orange") +
   geom_vline(xintercept = week3_after_start, lty = 2) + 
-  annotate("text",label = week3_after_start,
+  annotate("text",label = "3 Weeks After",
            x = week3_after_start, y = .05, hjust = 1.1)+ 
+  geom_vline(xintercept = as.Date("2020/08/18")+42, lty = 2) + 
+  annotate("text",label = "6 Weeks After",
+           x = as.Date("2020/08/18")+130, y = .06, hjust = 1.3)+ 
   labs(x = "Date", y = "Exponential Growth Coefficient", 
        color = "Majority Teaching Method",
        caption = "Smoothing window set to every 4 weeks",
@@ -335,12 +393,8 @@ ggplot(cases_slope_teach_agg, aes(x = DATE, color = major_teaching)) +
     panel.grid.minor = element_blank(),
     panel.border = element_blank(),
     panel.background = element_blank())+
-  theme(axis.text = element_text(size=15),
-        axis.title=element_text(size=15),
-        legend.text = element_text(size=13))
+  theme(axis.text = element_text(size=15),axis.title=element_text(size=15),legend.text = element_text(size=13))
 ```
-
-
 
 
 

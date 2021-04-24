@@ -305,7 +305,7 @@ death_teaching <-  cases%>%
   select(COUNTY,DATE,POPULATION,CUMDEATHS,NEWDEATHS,Online_Only,Hybrid,On_Premises,major_teaching,major_teaching_prop)
 
 death_teaching <- death_teaching%>%
-  left_join(ohio_profile%>%distinct(County,NCHS.Urban.Rural.Status,Population.density),by=c("COUNTY"="County"))%>%
+  left_join(ohio_profile%>%distinct(County,Metropolitan.Status,NCHS.Urban.Rural.Status,Population.density),by=c("COUNTY"="County"))%>%
   left_join(major_reopening,by=c("COUNTY"))
 
 write.csv(death_teaching,"deaths_teaching.csv",row.names = F)
@@ -365,7 +365,7 @@ avgB0 <- cases_slope_teach%>%
 
 #  B0 and B1
 B0B1 <- death_teaching%>%
-  distinct(COUNTY,POPULATION,NCHS.Urban.Rural.Status,Population.density)%>%
+  distinct(COUNTY,POPULATION,NCHS.Urban.Rural.Status,Metropolitan.Status,Population.density)%>%
   left_join(maxB1,by="COUNTY")%>%
   left_join(wide_teaching_enroll, by = c("COUNTY" = "county"))%>%
   left_join(avgB1,by="COUNTY")%>%
