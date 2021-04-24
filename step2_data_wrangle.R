@@ -308,12 +308,75 @@ death_teaching <- death_teaching%>%
   left_join(ohio_profile%>%distinct(County,NCHS.Urban.Rural.Status,Population.density),by=c("COUNTY"="County"))%>%
   left_join(major_reopening,by=c("COUNTY"))
 
-write.csv(death_teaching,"phight_covid/deaths_teaching.csv",row.names = F)
+write.csv(death_teaching,"deaths_teaching.csv",row.names = F)
 
 
-death_teaching%>%
-  filter(major_teaching=="On Premises",NCHS.Urban.Rural.Status=="Micropolitan")%>%
-  select(COUNTY,)
+######## B(t) manipulation
+
+# splines and slopes added
+cases_slope <- read.csv("county_splines.csv", header = T)%>%
+  select(COUNTY,DATE,POPULATION,CUMDEATHS,log_tot_deaths,tot.slope,NEWDEATHS,rev_NEWDEATHS,log_new_deaths,new.slope)
+
+# SHIFT THE DATE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+cases_slope$DATE <- as.Date(cases_slope$DATE)-24
+
+# get majority teaching method wide_teaching_enroll
+cases_slope_teach <-death_teaching%>%
+  select(-DATE,-POPULATION,-CUMDEATHS,-NEWDEATHS)%>%
+  distinct()%>%
+  right_join(cases_slope,by=c("COUNTY"))%>%
+  filter(DATE>as.Date("2020-01-23"))
+
+write.csv(cases_slope_teach,"cases_slope_teach.csv",row.names = F)
+
+## ordering the teaching method factor to ensure the color order
+
+cases_slope_teach$major_teaching <- factor(cases_slope_teach$major_teaching,levels = c("On Premises","Hybrid","Online Only"))
+cases_slope_teach$DATE <- as.Date(cases_slope_teach$DATE)
 
 
+# Select Max B1 & B0
 
+maxB1 <- cases_slope_teach%>%
+  group_by(COUNTY)%>%
+  filter(DATE >= as.Date("2020-08-18") & DATE<=as.Date("2020-12-15"))%>%
+  summarise(max_B1 = max(new.slope))
+
+avgB1 <- cases_slope_teach%>%
+  group_by(COUNTY)%>%
+  filter(DATE >= as.Date("2020-08-18") & DATE<=as.Date("2020-12-15"))%>%
+  summarise(avg_B1 = mean(new.slope))
+
+## avg3w_B0 ## average B0 of the first 3 weeks of school reopening 
+## avg1w_2w_B0 ## OR average B0s between  2020-08-18 -7days and +14days [before the rate bounce back around the dashed line]
+## avg3w_bf_B0 ## OR average B0s between  2020-08-18 -21days and 2020-08-18 [before the rate bounce back around the dashed line]
+avgB0 <- cases_slope_teach%>%
+  group_by(COUNTY)%>%
+  filter(DATE > as.Date("2020-08-18") & DATE<as.Date(major_opendate)+21)%>%
+  summarise(avg3w_B0 = mean(new.slope))%>%
+  left_join(cases_slope_teach%>%
+              group_by(COUNTY)%>%
+              filter(DATE > as.Date("2020-08-18")-7 & DATE<as.Date("2020-08-18")+14)%>%
+              summarise(avg1w_2w_B0 = mean(new.slope)),by="COUNTY")%>%
+  left_join(cases_slope_teach%>%
+              group_by(COUNTY)%>%
+              filter(DATE < as.Date("2020-08-18") & DATE>=as.Date("2020-08-18")-21)%>%
+              summarise(avg3w_bf_B0 = mean(new.slope)),by="COUNTY")
+
+#  B0 and B1
+B0B1 <- death_teaching%>%
+  distinct(COUNTY,POPULATION,NCHS.Urban.Rural.Status,Population.density)%>%
+  left_join(maxB1,by="COUNTY")%>%
+  left_join(wide_teaching_enroll, by = c("COUNTY" = "county"))%>%
+  left_join(avgB1,by="COUNTY")%>%
+  left_join(avgB0,by="COUNTY")%>%
+  left_join(avg_mobility,by="COUNTY")
+
+## ordering the teaching method factor to ensure the color order
+B0B1$major_teaching <- factor(B0B1$major_teaching,levels = c("On Premises","Hybrid","Online Only"))
+
+
+## shift mobility
+
+# SHIFT the DATE for mobility as well: mobility a week ago may impact the infections number now
+case_mobility$DATE <- case_mobility$DATE - 7 ## WARNING: only run this once
