@@ -256,12 +256,18 @@ ggplot(fall_cases,aes(y = death_incidence_per_1000, x = major_teaching)) +
   stat_pvalue_manual(stat.test, label = "p",y.position = 2.5, step.increase = 0.15)+
   ylim(c(0,3.5))+ 
   theme_bw()+ 
-  labs(y = "Death Incidence / 1,000 people",
+  labs(y = "Death Incidence / 1,000 people",x = "",
        fill = "Majority Teaching Method",
        title = "Death Incidence in the Fall Semester",
        caption = "Pairwise p-values come from Duncan pairwise comparison test") +
   theme(legend.position = "bottom",
-        axis.text.x=element_blank())
+        axis.text.x=element_blank())+
+  theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank()) 
+#ggsave("boxplots.png", width = 7, height = 5)
 ```
 
 # Appendix 3: Exponential growth model
@@ -323,8 +329,8 @@ B0B1 <- death_teaching%>%
   left_join(maxB1,by="COUNTY")%>%
   left_join(wide_teaching_enroll, by = c("COUNTY" = "county"))%>%
   left_join(avgB1,by="COUNTY")%>%
-  left_join(avgB0,by="COUNTY")%>%
-  left_join(avg_mobility,by="COUNTY")
+  left_join(avgB0,by="COUNTY") #%>%
+  #left_join(avg_mobility,by="COUNTY")
 ## ordering the teaching method factor to ensure the color order
 B0B1$major_teaching <- factor(B0B1$major_teaching,levels = c("On Premises","Hybrid","Online Only"))
 ```
@@ -342,6 +348,7 @@ cases_slope_teach_agg <- cases_slope_teach %>%
   mutate(smooth.spline = smooth.spline(DATE,log_new_deaths,df = 398/28)$y,
          B = predict(smooth.spline(DATE,log_new_deaths,df = 398/28),deriv = 1)$y,B2 = predict(smooth.spline(DATE,log_new_deaths,df = 398/28),deriv = 2)$y)
 
+week3_after_start <- as.Date("2020/08/18") + 21
 
 ggplot(cases_slope_teach_agg, aes(x = DATE, color = major_teaching)) +
   geom_point(aes(y = log_new_deaths), alpha = .3)+ 
@@ -368,8 +375,6 @@ ggplot(cases_slope_teach_agg, aes(x = DATE, color = major_teaching)) +
     panel.border = element_blank(),
     panel.background = element_blank())+
   theme(axis.text = element_text(size=15),axis.title=element_text(size=15),legend.text = element_text(size=13))
-
-week3_after_start <- as.Date("2020/08/18") + 21
 
 ggplot(cases_slope_teach_agg, aes(x = DATE, color = major_teaching)) + 
   geom_line(aes(y = B), size = 1) +
