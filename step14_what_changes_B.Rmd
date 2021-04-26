@@ -22,11 +22,12 @@ The mobility date has been shifted one week forward as well. Assuming mobility a
 source("step2_data_wrangle.r") ## B(t) include in step2 as well
 
 ## plot theme
-team_theme <- theme(axis.line = element_line(colour = "black"),
+grid_theme <- theme(axis.line = element_line(colour = "black"),
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank(),
     panel.border = element_blank(),
-    panel.background = element_blank(),legend.position = "bottom",legend.box="vertical", legend.margin=margin())+theme(legend.text = element_text(size=12),legend.title = element_text(size=12),axis.text = element_text(size=13),title=element_text(size=13))
+    panel.background = element_blank(),legend.position = "bottom",legend.box="vertical", legend.margin=margin())
+team_theme <- grid_theme+theme(legend.text = element_text(size=12),legend.title = element_text(size=12),axis.text = element_text(size=13),title=element_text(size=13))
 ```
 
 # compute the differences in B(3weeks after start) and B(6weeks after start)
@@ -120,27 +121,48 @@ ggsave("p1.png",width = 6.5,height = 6)
 
 
 B_diff_micro%>%
-  ggplot(aes(x=avg2_full_work_prob,y=new.slope.diff2,group=major_teaching,color=major_teaching))+geom_point(aes(size=log(Population.density),alpha=log(Population.density)))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+labs(y="B(6w) - B(3w)",x="Average mobility proportion during fall semester",title="B1-B0 in 3w~6w v.s. Average full mobility proportion \nOnly Micropolitan Counties",size="Log of Population Density",alpha="Log of Population Density",fill="Majority Teaching Method")
+  ggplot(aes(x=avg2_full_work_prob,y=new.slope.diff2,group=major_teaching,color=major_teaching))+geom_point(aes(size=log(Population.density),alpha=log(Population.density)))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+labs(y="B(6w) - B(3w)",x="Average mobility proportion in 3w-6w",title="B1-B0 in 3w~6w v.s. Average full mobility proportion \nOnly Micropolitan Counties",size="Log of Population Density",alpha="Log of Population Density",fill="Majority Teaching Method")
 ggsave("p2.png",width = 6.5,height = 6)
 ```
 
 ```{r}
 B_diff_micro%>%
-  ggplot(aes(x=log(Population.density),y=new.slope.diff,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg_full_work_prob,alpha=avg_full_work_prob))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+team_theme+labs(y="B(3w) - B(0w)",x="Log of Population",title="B1-B0 in 0w~3w v.s. Log of Population Density\nOnly Micropolitan Counties",color="Majority Teaching Method",size = "0w~3w\nAveraged %6hr+ Away Home",alpha= "0w~3w\nAveraged %6hr+ Away Home" )
+  ggplot(aes(x=log(Population.density),y=new.slope.diff,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg_full_work_prob,alpha=avg_full_work_prob))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+labs(y="B(3w) - B(0w)",x="Log of Population",title="B1-B0 in 0w~3w v.s. Log of Population Density\nOnly Micropolitan Counties",color="Majority Teaching Method",size = "0w~3w\nAveraged %6hr+ Away Home",alpha= "0w~3w\nAveraged %6hr+ Away Home" )+team_theme
+
 ggsave("p1.png",width = 6.5,height = 6)
 
-
 B_diff_micro%>%
-  ggplot(aes(x=avg_full_work_prob,y=new.slope.diff,group=major_teaching,color=major_teaching))+geom_point(aes(size=log(Population.density),alpha=log(Population.density)))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+labs(y="B(3w) - B(0w)",x="Average mobility proportion during fall semester",title="B1-B0 in 0w~3w v.s. Average full mobility proportion\nOnly Micropolitan Counties",size="Log of Population Density",alpha="Log of Population Density",fill="Majority Teaching Method")
+  ggplot(aes(x=avg_full_work_prob,y=new.slope.diff,group=major_teaching,color=major_teaching))+geom_point(aes(size=log(Population.density),alpha=log(Population.density)))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+labs(y="B(3w) - B(0w)",x="Average mobility proportion in 0w-3w",title="B1-B0 in 0w~3w v.s. Average full mobility proportion\nOnly Micropolitan Counties",size="Log of Population Density",alpha="Log of Population Density",fill="Majority Teaching Method")+team_theme
+
 ggsave("p2.png",width = 6.5,height = 6)
 ```
 
-
+### B1-B0 dot plots for each group
 
 ```{r}
 B_diff_micro%>%
-  ggplot(aes(x=avg2_full_work_prob,y=new.slope.diff2,group=major_teaching,color=major_teaching))+geom_point(aes(size=log(Population.density),alpha=log(Population.density)))+facet_grid(~major_teaching)+team_theme+labs(y="B(6w) - B(3w)",x="Average mobility proportion during fall semester",title="B1-B0 in Only Micropolitan Counties",size="Log of Population Density",alpha="Log of Population Density",fill="Majority Teaching Method")
+  ggplot(aes(x=avg_full_work_prob,y=new.slope.diff,group=major_teaching,color=major_teaching))+geom_point(aes(size=log(Population.density),alpha=log(Population.density)))+facet_grid(~major_teaching)+labs(y="B(3w) - B(0w)",x="Average mobility proportion in 0w-3w",title="B1(3w)-B0(0w) in Only Micropolitan Counties",size="Log of Population Density",color="Majority Teaching Method",alpha="Log of Population Density",fill="Majority Teaching Method")+grid_theme+theme(legend.text = element_text(size=13),legend.title = element_text(size=13),axis.text = element_text(size=11),title=element_text(size=14),strip.text.x = element_text(
+        size = 12, face = "bold.italic"
+        ))
 
+ggsave("p1.png",width = 10,height = 4)
+
+
+B_diff_micro%>%
+  ggplot(aes(x=avg2_full_work_prob,y=new.slope.diff2,group=major_teaching,color=major_teaching))+geom_point(aes(size=log(Population.density),alpha=log(Population.density)))+facet_grid(~major_teaching)+labs(y="B(6w) - B(3w)",x="Average mobility proportion in 3w-6w",title="B1(6w)-B0(3w) in Only Micropolitan Counties",size="Log of Population Density",color="Majority Teaching Method",alpha="Log of Population Density",fill="Majority Teaching Method")+grid_theme+theme(legend.text = element_text(size=13),legend.title = element_text(size=13),axis.text = element_text(size=11),title=element_text(size=14),strip.text.x = element_text(
+        size = 12, face = "bold.italic"
+        ))
+
+ggsave("p2.png",width = 10,height = 4)
+
+
+na.omit(B0B1)%>%
+  filter(NCHS.Urban.Rural.Status=="Micropolitan")%>%
+  drop_na(major_teaching)%>%
+  ggplot(aes(x=avg_full_work_prob,y=max_B1,group=major_teaching,color=major_teaching))+geom_point(aes(size=log(Population.density),alpha=log(Population.density)))+facet_grid(~major_teaching)+labs(y="Max B1",x="Averaged \n%6hr+ Away Home in Fall semester",title="Max B1 in Fall v.s. Average Mobility \nOnly Micropolitan Counties",color="Majority Teaching Method",size = "Log of Population",alpha= "Log of Population" )+grid_theme+theme(legend.text = element_text(size=13),legend.title = element_text(size=13),axis.text = element_text(size=11),title=element_text(size=14),strip.text.x = element_text(
+        size = 12, face = "bold.italic"
+        ))
+ggsave("p3.png",width = 10,height = 4)
 ```
 
 

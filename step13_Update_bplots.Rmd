@@ -179,13 +179,6 @@ na.omit(B0B1)%>%
 na.omit(B0B1)%>%
   drop_na(major_teaching)%>%
   ggplot(aes(x=log(Population.density),y=max_B1,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg_full_work_prob,alpha=avg_full_work_prob))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+team_theme+labs(y="Max B1",x="Log of Population",title="Max B1 vs Log of Population Density",color="Majority Teaching Method",size = "Averaged \n%6hr+ Away Home",alpha= "Averaged \n%6hr+ Away Home" )
-
-
-na.omit(B0B1)%>%
-  filter(NCHS.Urban.Rural.Status=="Micropolitan")%>%
-  drop_na(major_teaching)%>%
-  ggplot(aes(x=log(Population.density),y=max_B1,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg_full_work_prob,alpha=avg_full_work_prob))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+team_theme+labs(y="Max B1",x="Log of Population",title="Max B1 in Fall v.s. Log of Population Density\nOnly Micropolitan Counties",color="Majority Teaching Method",size = "Averaged \n%6hr+ Away Home",alpha= "Averaged \n%6hr+ Away Home" )
-ggsave("p1.png",width = 6.5,height = 6)
 ```
 
 
@@ -204,14 +197,6 @@ mobility_semester<-case_mobility%>%
 na.omit(B0B1)%>%
   left_join(mobility_semester,by="COUNTY")%>%
   ggplot(aes(x=total_mobility,y=max_B1,group=major_teaching,color=major_teaching))+geom_point(aes(size=log(POPULATION),alpha=log(POPULATION)))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+labs(y="Max B1",x="Average mobility proportion during fall semester",title="Max B1 vs Average full mobility proportion during fall semester \nAveraged %6hr+ Away Home",size="Log of Population",alpha="Log of Population")
-
-
-
-na.omit(B0B1)%>%
-  filter(NCHS.Urban.Rural.Status=="Micropolitan")%>%
-  left_join(mobility_semester,by="COUNTY")%>%
-  ggplot(aes(x=total_mobility,y=max_B1,group=major_teaching,color=major_teaching))+geom_point(aes(size=log(POPULATION),alpha=log(POPULATION)))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+labs(y="Max B1",x="Average mobility proportion during fall semester",title="Max B1 v.s. Average full mobility proportion during Fall\nOnly Micropolitan Counties",size="Log of Population",alpha="Log of Population")
-ggsave("p2.png",width = 6.5,height = 6)
 ```
 
 ```{r}
@@ -222,6 +207,19 @@ B0B1%>%
 ```
 
 
+```{r}
+
+na.omit(B0B1)%>%
+  filter(NCHS.Urban.Rural.Status=="Micropolitan")%>%
+  drop_na(major_teaching)%>%
+  ggplot(aes(x=log(Population.density),y=max_B1,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg_full_work_prob,alpha=avg_full_work_prob))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+team_theme+labs(y="Max B1",x="Log of Population",title="Max B1 in Fall v.s. Log of Population Density\nOnly Micropolitan Counties",color="Majority Teaching Method",size = "Averaged \n%6hr+ Away Home",alpha= "Averaged \n%6hr+ Away Home" )
+
+na.omit(B0B1)%>%
+  filter(NCHS.Urban.Rural.Status=="Micropolitan")%>%
+  left_join(mobility_semester,by="COUNTY")%>%
+  ggplot(aes(x=total_mobility,y=max_B1,group=major_teaching,color=major_teaching))+geom_point(aes(size=log(POPULATION),alpha=log(POPULATION)))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+labs(y="Max B1",x="Average mobility proportion during fall semester",title="Max B1 v.s. Average full mobility proportion during Fall\nOnly Micropolitan Counties",size="Log of Population",alpha="Log of Population")
+ggsave("p2.png",width = 6.5,height = 6)
+```
 
 
 
