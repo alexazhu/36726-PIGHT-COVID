@@ -402,6 +402,111 @@ ggplot(cases_slope_teach_agg, aes(x = DATE, color = major_teaching)) +
 ```
 
 
+# Difference in B's
+
+```{r}
+B0w <- cases_slope_teach%>%
+  filter(DATE==as.Date("2020-08-18"))%>%
+  drop_na(major_teaching)%>%
+  rename(new.slope0w=new.slope)
+
+
+B3w <- cases_slope_teach%>%
+  filter(DATE==as.Date("2020-08-18")+21)%>%
+  drop_na(major_teaching)%>%
+  rename(new.slope3w=new.slope)
+
+B6w <- cases_slope_teach%>%
+  filter(DATE==as.Date("2020-08-18")+42)%>%
+  drop_na(major_teaching)%>%
+  rename(new.slope6w=new.slope)
+
+avg_mobi_0w3w <- case_mobility%>%
+  left_join(major_reopening,by=c("COUNTY"))%>%
+  group_by(COUNTY)%>%
+  filter(DATE >= as.Date("2020-08-18")& DATE <as.Date("2020-08-18") + 21)%>%
+  summarise(avg_full_work_prob = mean(full_work_prop_7d))
+
+avg_mobi_3w6w <- case_mobility%>%
+  left_join(major_reopening,by=c("COUNTY"))%>%
+  group_by(COUNTY)%>%
+  filter(DATE >= as.Date("2020-08-18")+ 21 & DATE <=as.Date("2020-08-18") + 42)%>%
+  summarise(avg2_full_work_prob = mean(full_work_prop_7d))
+
+
+B_diff <- B6w[,c(1:9,13,20)]%>%
+  left_join(B3w%>%select(COUNTY,new.slope3w),by="COUNTY")%>%
+  left_join(B0w%>%select(COUNTY,new.slope0w),by="COUNTY")%>%
+  mutate(new.slope.diff = new.slope3w-new.slope0w,new.slope.diff2 = new.slope6w-new.slope3w)%>%
+  left_join(avg_mobi_0w3w,by="COUNTY")%>%
+  left_join(avg_mobi_3w6w,by="COUNTY")
+
+
+B_diff$major_teaching <- factor(B_diff$major_teaching,levels = c("On Premises","Hybrid","Online Only"))
+
+
+```
+
+```{r}
+# pop density plot
+
+B_diff%>%
+  drop_na(major_teaching)%>%
+  ggplot(aes(x=log(Population.density),y=new.slope.diff2,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg2_full_work_prob,alpha=avg2_full_work_prob))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+team_theme+labs(y="B(6w) - B(3w)",x="Log of Population",title="B1-B0 vs Log of Population Density",color="Majority Teaching Method",size = "3w~6w\nAveraged %6hr+ Away Home",alpha= "3w~6w\nAveraged %6hr+ Away Home" )
+
+# mobility plot
+
+B_diff%>%
+  drop_na(major_teaching)%>%
+  ggplot(aes(x=avg2_full_work_prob,y=new.slope.diff2,group=major_teaching,color=major_teaching))+geom_point(aes(size=log(Population.density),alpha=log(Population.density)))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+labs(y="B(6w) - B(3w)",x="Average mobility proportion during fall semester",title="B1-B0 vs Average full mobility proportion in 3w~6w\n Averaged %6hr+ Away Home",size="Log of Population Density",alpha="Log of Population Density",color="Majority Teaching Method")
+
+```
+
+# Micropolitan Counties
+
+```{r}
+# diff B1 vs RURAL
+B_diff%>%
+  drop_na(major_teaching)%>%
+  ggplot(aes(y=NCHS.Urban.Rural.Status,x=new.slope.diff2,fill=major_teaching))+facet_grid(~major_teaching)+geom_boxplot()+labs(fill="Majority Teaching Method",size="Averaged \n%6hr+ Away Home",title="Distribution of B(6 weeks after) minus B(3 weeks after) \nby Rural-urban Status",x="B(6w) - B(3w)", y= "Rural-urban Status")+team_theme
+```
+
+
+```{r}
+# Micropolitan map plots
+ohio_profile%>%
+  distinct(County,NCHS.Urban.Rural.Status) %>%
+  mutate(is_micro = factor(ifelse(NCHS.Urban.Rural.Status == "Micropolitan",1,0)))%>%
+  left_join(ohio_map,by=c('County'='county'))%>%
+  ggplot() + 
+  geom_polygon(aes(x = long, y = lat, group = group, fill = is_micro),
+               color = "gray") + 
+  coord_fixed(1.3) + theme_map() +
+  scale_fill_manual(values = c("0" ="#FFFFCC",
+                    "1" ="#CC6633"))+
+  labs(fill='Micropolitan Counties')+
+  theme(legend.text = element_text(size=12),
+        legend.title = element_text(size=12),
+        legend.position = "bottom",
+        legend.key.size = unit(2,"lines"))
+```
+
+
+
+```{r}
+## Filter only the micro counties
+B_diff_micro <- B_diff%>%
+  drop_na(major_teaching)%>%
+  filter(NCHS.Urban.Rural.Status=="Micropolitan")
+
+
+B_diff_micro%>%
+  ggplot(aes(x=log(Population.density),y=new.slope.diff,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg2_full_work_prob,alpha=avg2_full_work_prob))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+team_theme+labs(y="B(3w) - B(0w)",x="Log of Population",title="B1-B0 in 0w~3w v.s. Log of Population Density\nOnly Micropolitan Counties",color="Majority Teaching Method",size = "3w~6w\nAveraged %6hr+ Away Home",alpha= "3w~6w\nAveraged %6hr+ Away Home" )
+
+B_diff_micro%>%
+  ggplot(aes(x=log(Population.density),y=new.slope.diff2,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg2_full_work_prob,alpha=avg2_full_work_prob))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+team_theme+labs(y="B(6w) - B(3w)",x="Log of Population",title="B1-B0 in 3w~6w v.s. Log of Population Density\nOnly Micropolitan Counties",color="Majority Teaching Method",size = "3w~6w\nAveraged %6hr+ Away Home",alpha= "3w~6w\nAveraged %6hr+ Away Home" )
+```
+
 
 
 
