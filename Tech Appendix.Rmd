@@ -21,6 +21,13 @@ library(ggrepel)
 library(cowplot)
 library(sp)
 source("step2_data_wrangle.R")
+## plot theme
+grid_theme <- theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(),legend.position = "bottom",legend.box="vertical", legend.margin=margin())
+team_theme <- grid_theme+theme(legend.text = element_text(size=12),legend.title = element_text(size=12),axis.text = element_text(size=13),title=element_text(size=13))
 ```
 
 ## Teaching method, Population and Enrollment
@@ -497,7 +504,8 @@ ohio_profile%>%
 ## Filter only the micro counties
 B_diff_micro <- B_diff%>%
   drop_na(major_teaching)%>%
-  filter(NCHS.Urban.Rural.Status=="Micropolitan")
+  filter(NCHS.Urban.Rural.Status=="Micropolitan") %>%
+  mutate(acc = new.slope.diff2 - new.slope.diff)
 
 
 B_diff_micro%>%
@@ -507,6 +515,22 @@ B_diff_micro%>%
   ggplot(aes(x=log(Population.density),y=new.slope.diff2,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg2_full_work_prob,alpha=avg2_full_work_prob))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+team_theme+labs(y="B(6w) - B(3w)",x="Log of Population",title="B1-B0 in 3w~6w v.s. Log of Population Density\nOnly Micropolitan Counties",color="Majority Teaching Method",size = "3w~6w\nAveraged %6hr+ Away Home",alpha= "3w~6w\nAveraged %6hr+ Away Home" )
 ```
 
+```{r}
+B_diff_micro%>%
+  ggplot(aes(x=log(Population.density),y=acc,
+             group=major_teaching,color=major_teaching))+
+  geom_point(aes(size=avg2_full_work_prob,alpha=avg2_full_work_prob))+
+  geom_smooth(method = "lm", se=F,
+              formula = y ~ x,alpha=0.1)+
+  theme_minimal()+
+  team_theme+
+  labs(y="Acceleration",x="Log of Population",
+       title="Difference in slope of B(0w) and B(3w)\nOnly Micropolitan Counties",
+       color="Majority Teaching Method",
+       size = "3w~6w\nAveraged %6hr+ Away Home",
+       alpha= "3w~6w\nAveraged %6hr+ Away Home" )
+#ggsave("acc.png", width = 7, height = 5)
+```
 
 
 
