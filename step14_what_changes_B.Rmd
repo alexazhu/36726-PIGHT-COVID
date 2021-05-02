@@ -111,7 +111,8 @@ B_diff%>%
 ## Filter only the micro counties
 B_diff_micro <- B_diff%>%
   drop_na(major_teaching)%>%
-  filter(NCHS.Urban.Rural.Status=="Micropolitan")
+  filter(NCHS.Urban.Rural.Status=="Micropolitan") %>%
+  mutate(acc = new.slope.diff2 - new.slope.diff)
 
 
 B_diff_micro%>%
@@ -129,12 +130,12 @@ ggsave("p2.png",width = 6.5,height = 6)
 B_diff_micro%>%
   ggplot(aes(x=log(Population.density),y=new.slope.diff,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg_full_work_prob,alpha=avg_full_work_prob))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+labs(y="B(3w) - B(0w)",x="Log of Population",title="B1-B0 in 0w~3w v.s. Log of Population Density\nOnly Micropolitan Counties",color="Majority Teaching Method",size = "0w~3w\nAveraged %6hr+ Away Home",alpha= "0w~3w\nAveraged %6hr+ Away Home" )+team_theme
 
-ggsave("p1.png",width = 6.5,height = 6)
+#ggsave("p1.png",width = 6.5,height = 6)
 
 B_diff_micro%>%
   ggplot(aes(x=avg_full_work_prob,y=new.slope.diff,group=major_teaching,color=major_teaching))+geom_point(aes(size=log(Population.density),alpha=log(Population.density)))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+labs(y="B(3w) - B(0w)",x="Average mobility proportion in 0w-3w",title="B1-B0 in 0w~3w v.s. Average full mobility proportion\nOnly Micropolitan Counties",size="Log of Population Density",alpha="Log of Population Density",fill="Majority Teaching Method")+team_theme
 
-ggsave("p2.png",width = 6.5,height = 6)
+#ggsave("p2.png",width = 6.5,height = 6)
 ```
 
 ### B1-B0 dot plots for each group
@@ -166,4 +167,20 @@ ggsave("p3.png",width = 10,height = 4)
 ```
 
 
+```{r}
+B_diff_micro%>%
+  ggplot(aes(x=log(Population.density),y=acc,
+             group=major_teaching,color=major_teaching))+
+  geom_point(aes(size=avg2_full_work_prob,alpha=avg2_full_work_prob))+
+  geom_smooth(method = "lm", se=F,
+              formula = y ~ x,alpha=0.1)+
+  theme_minimal()+
+  team_theme+
+  labs(y="Acceleration",x="Log of Population",
+       title="Difference in slope of B(0w) and B(3w)\nOnly Micropolitan Counties",
+       color="Majority Teaching Method",
+       size = "3w~6w\nAveraged %6hr+ Away Home",
+       alpha= "3w~6w\nAveraged %6hr+ Away Home" )
+#ggsave("acc.png", width = 7, height = 5)
+```
 
