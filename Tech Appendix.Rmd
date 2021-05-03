@@ -553,8 +553,48 @@ B_diff_micro%>%
 
 
 
+# 3 colored boxplots for response variable (total number of deaths before semester)/pop
 
+```{r}
+death_semester <- cases%>%
+  filter(DATE>="2020-08-18" & DATE<="2020-12-15")%>%
+  group_by(COUNTY)%>%
+  filter(row_number()==1 | row_number()==n())%>%
+  summarize(death_semester = diff(CUMDEATHS),DATE = DATE,cdeaths=CUMDEATHS,label=c("start","end"))%>%
+  dcast(COUNTY+death_semester~label,value.var = "cdeaths")
 
+death_semester%>%
+  left_join(B0B1%>%select(COUNTY,major_teaching),by="COUNTY")%>%
+  left_join(death_prop%>%select(COUNTY,POPULATION),by="COUNTY")%>%
+  mutate(d_inci_before_sem=start/POPULATION*1000)%>%
+  na.omit()%>%
+  ggplot(aes(x=major_teaching,y=d_inci_before_sem,group=major_teaching,fill=major_teaching))+geom_boxplot()+theme_minimal()+team_theme+
+  labs(y="Death Incidence",x="Teaching Method",title="Death Incidence vs Teaching Method \n-(total number of deaths before semester)/pop*1000",color="Teaching Method")+team_theme+scale_fill_manual(values=col_theme)+scale_color_manual(values=col_theme)+theme(legend.position = "bottom")
+
+ggsave("boxplotmaxB1vstmethod_bfs.png",width = 7, height = 5)
+```
+
+```{r}
+ratio <- cases%>%
+  left_join(wide_teaching_enroll,by=c("COUNTY"="county"))%>%
+  drop_na(major_teaching)%>%
+  group_by(major_teaching,DATE)%>%
+  summarise(ratios = sum(CUMDEATHS)/sum(CUMCONFIRMED))
+
+ratio%>%
+  ggplot(aes(x=DATE,y=ratios,color=major_teaching))+geom_line(size=1)+
+  geom_rect(data = ratio[1,],
+            aes(xmin=as.Date("2020/08/18"), xmax=as.Date("2020/12/15"),
+                ymin=-Inf,ymax=Inf),
+            color = NA,alpha=0.2, show.legend = F, fill = "orange") + 
+  geom_vline(xintercept = as.Date("2020/11/24"), lty = 2) +
+  annotate("text",label = as.Date("2020/11/24"),
+           x = as.Date("2020/11/24"), y = .07, hjust = 1.1)+ 
+  labs(x = "Date", y = "Cumulative deaths/cases ratio", 
+       color = "Majority Teaching Method",
+       subtitle = "Yellow area represents the fall semester (08/18 - 12/15)") + 
+  theme(legend.position = "bottom")+team_theme+scale_color_manual(values=col_theme)
+```
 
 
 
