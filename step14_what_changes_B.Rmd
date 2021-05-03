@@ -26,8 +26,10 @@ grid_theme <- theme(axis.line = element_line(colour = "black"),
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank(),
     panel.border = element_blank(),
-    panel.background = element_blank(),legend.position = "bottom",legend.box="vertical", legend.margin=margin())
-team_theme <- grid_theme+theme(legend.text = element_text(size=12),legend.title = element_text(size=12),axis.text = element_text(size=13),title=element_text(size=13))
+    panel.background = element_blank(),legend.position = "bottom",legend.box="vertical", legend.margin=margin(),panel.spacing = unit(1.5, "lines"),strip.text.x = element_text(
+        size = 12, face = "bold.italic"))
+
+team_theme <- grid_theme+theme(legend.text = element_text(size=13),legend.title = element_text(size=13),axis.text = element_text(size=13),title=element_text(size=14),axis.title.x.bottom = element_text(margin = margin(12, 10, 6, 10)),axis.title.y.left = element_text(size=14),axis.text.y.left = element_text(size = 14))+theme( plot.caption = element_text(face = "italic",size = 11.5))
 ```
 
 # compute the differences in B(3weeks after start) and B(6weeks after start)
@@ -83,13 +85,15 @@ hist(B_diff$new.slope.diff2)
 
 B_diff%>%
   drop_na(major_teaching)%>%
-  ggplot(aes(x=log(Population.density),y=new.slope.diff2,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg2_full_work_prob,alpha=avg2_full_work_prob))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+team_theme+labs(y="B(6w) - B(3w)",x="Log of Population",title="B1-B0 vs Log of Population Density",color="Majority Teaching Method",size = "3w~6w\nAveraged %6hr+ Away Home",alpha= "3w~6w\nAveraged %6hr+ Away Home" )
+  ggplot(aes(x=log(Population.density),y=new.slope.diff2,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg2_full_work_prob,alpha=avg2_full_work_prob))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+team_theme+labs(y="B(6w) - B(3w)",x="Log of Population Density",title="B1-B0 vs Log of Population Density",color="Majority Teaching Method",size = "3w~6w\nAveraged %6hr+ Away Home",alpha= "3w~6w\nAveraged %6hr+ Away Home" )
+ggsave("p1.png",width =7,height =  6.5)
 
 # mobility plot
 
 B_diff%>%
   drop_na(major_teaching)%>%
-  ggplot(aes(x=avg2_full_work_prob,y=new.slope.diff2,group=major_teaching,color=major_teaching))+geom_point(aes(size=log(Population.density),alpha=log(Population.density)))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+labs(y="B(6w) - B(3w)",x="Average mobility proportion during fall semester",title="B1-B0 vs Average full mobility proportion in 3w~6w\n Averaged %6hr+ Away Home",size="Log of Population Density",alpha="Log of Population Density",fill="Majority Teaching Method")
+  ggplot(aes(x=avg2_full_work_prob,y=new.slope.diff2,group=major_teaching,color=major_teaching))+geom_point(aes(size=log(Population.density),alpha=log(Population.density)))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+labs(y="B(6w) - B(3w)",x="Average mobility proportion during fall semester",title="B1-B0 vs Average full mobility proportion in 3w~6w\n Averaged %6hr+ Away Home",size="Log of Population Density",alpha="Log of Population Density",color="Majority Teaching Method")
+ggsave("p2.png",width = 7,height =  6.5)
 
 ```
 
@@ -101,8 +105,14 @@ B_diff%>%
 
 B_diff%>%
   drop_na(major_teaching)%>%
+  ggplot(aes(y=NCHS.Urban.Rural.Status,x=new.slope.diff2,fill=major_teaching))+geom_boxplot()+facet_grid(~major_teaching)+theme(legend.position = "")+labs(x="B(6w) - B(3w)",y="Rural-urban Status",title="Distribution of B(6 weeks after) minus B(3 weeks after)\nby Rural-urban Status",fill="Majority Teaching Method")+team_theme
+
+ggsave("p2.png",width = 10,height = 5)
+
+B_diff%>%
+  drop_na(major_teaching)%>%
   ggplot(aes(y=Metropolitan.Status,x=new.slope.diff2,fill=Metropolitan.Status))+geom_boxplot()+team_theme+theme(legend.position = "")+labs(x="B(6w) - B(3w)",y="Metropolitan Status",title="Distribution of B(6 weeks after) minus B(3 weeks after)")+
-  scale_fill_brewer(palette = "Reds",direction = -1)  
+  scale_fill_brewer(palette = "Reds",direction = -1) 
 ```
 
 ## Redo the plots but only with Micro counties
@@ -113,28 +123,30 @@ B_diff_micro <- B_diff%>%
   drop_na(major_teaching)%>%
   filter(NCHS.Urban.Rural.Status=="Micropolitan")
 
+B_diff_micro%>%
+  ggplot(aes(x=avg_full_work_prob,y=new.slope.diff,group=major_teaching,color=major_teaching))+geom_point(aes(size=log(Population.density),alpha=log(Population.density)))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+labs(y="B(3w) - B(0w)",x="Average mobility proportion in 0w-3w",title="B1-B0 in 0w~3w v.s. Average full mobility proportion\nOnly Micropolitan Counties",size="Log of Population Density",alpha="Log of Population Density",fill="Majority Teaching Method",fill="Majority Teaching Method")+team_theme+geom_text(data =B_diff_micro%>%filter(major_teaching=="On Premises"),aes(label=COUNTY),color='black',size=3,hjust=1.1, vjust=0.3,size=6)
+ggsave("p1.png",width = 7.5,height = 6)
+
+B_diff_micro%>%filter(COUNTY=="CHAMPAIGN")
+B_diff_micro%>%filter(COUNTY=="DEFIANCE")
+B_diff_micro%>%filter(COUNTY=="MERCER")
 
 B_diff_micro%>%
-  ggplot(aes(x=log(Population.density),y=new.slope.diff2,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg2_full_work_prob,alpha=avg2_full_work_prob))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+team_theme+labs(y="B(6w) - B(3w)",x="Log of Population",title="B1-B0 in 3w~6w v.s. Log of Population Density\nOnly Micropolitan Counties",color="Majority Teaching Method",size = "3w~6w\nAveraged %6hr+ Away Home",alpha= "3w~6w\nAveraged %6hr+ Away Home" )
-ggsave("p1.png",width = 6.5,height = 6)
+  ggplot(aes(x=log(Population.density),y=new.slope.diff2,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg2_full_work_prob,alpha=avg2_full_work_prob))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+team_theme+labs(y="B(6w) - B(3w)",x="Log of Population Density",title="B1-B0 in 3w~6w v.s. Log of Population Density\nOnly Micropolitan Counties",color="Majority Teaching Method",size = "3w~6w\nAveraged %6hr+ Away Home",alpha= "3w~6w\nAveraged %6hr+ Away Home" ,fill="Majority Teaching Method")+geom_text(data =B_diff_micro%>%filter(major_teaching=="On Premises"),aes(label=COUNTY),color='black',size=3,hjust=1.1, vjust=0.3)
+ggsave("p2.png",width = 7.5,height = 6)
 
-
-
-B_diff_micro%>%
-  ggplot(aes(x=avg2_full_work_prob,y=new.slope.diff2,group=major_teaching,color=major_teaching))+geom_point(aes(size=log(Population.density),alpha=log(Population.density)))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+labs(y="B(6w) - B(3w)",x="Average mobility proportion in 3w-6w",title="B1-B0 in 3w~6w v.s. Average full mobility proportion \nOnly Micropolitan Counties",size="Log of Population Density",alpha="Log of Population Density",fill="Majority Teaching Method")
-ggsave("p2.png",width = 6.5,height = 6)
 ```
 
 ```{r}
 B_diff_micro%>%
-  ggplot(aes(x=log(Population.density),y=new.slope.diff,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg_full_work_prob,alpha=avg_full_work_prob))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+labs(y="B(3w) - B(0w)",x="Log of Population",title="B1-B0 in 0w~3w v.s. Log of Population Density\nOnly Micropolitan Counties",color="Majority Teaching Method",size = "0w~3w\nAveraged %6hr+ Away Home",alpha= "0w~3w\nAveraged %6hr+ Away Home" )+team_theme
+  ggplot(aes(x=log(Population.density),y=new.slope.diff,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg_full_work_prob,alpha=avg_full_work_prob))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+labs(y="B(3w) - B(0w)",x="Log of Population Density",title="B1-B0 in 0w~3w v.s. Log of Population Density\nOnly Micropolitan Counties",color="Majority Teaching Method",size = "0w~3w\nAveraged %6hr+ Away Home",alpha= "0w~3w\nAveraged %6hr+ Away Home" ,fill="Majority Teaching Method")+team_theme+geom_text(data =B_diff_micro%>%filter(major_teaching=="On Premises"),aes(label=COUNTY),color='black',size=3,hjust=1.1, vjust=0.3,size=6)
 
-ggsave("p1.png",width = 6.5,height = 6)
+ggsave("p1.png",width = 7.5,height = 6)
+
 
 B_diff_micro%>%
-  ggplot(aes(x=avg_full_work_prob,y=new.slope.diff,group=major_teaching,color=major_teaching))+geom_point(aes(size=log(Population.density),alpha=log(Population.density)))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+labs(y="B(3w) - B(0w)",x="Average mobility proportion in 0w-3w",title="B1-B0 in 0w~3w v.s. Average full mobility proportion\nOnly Micropolitan Counties",size="Log of Population Density",alpha="Log of Population Density",fill="Majority Teaching Method")+team_theme
-
-ggsave("p2.png",width = 6.5,height = 6)
+  ggplot(aes(x=avg2_full_work_prob,y=new.slope.diff2,group=major_teaching,color=major_teaching,label=COUNTY))+geom_point(aes(size=log(Population.density),alpha=log(Population.density)))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+labs(y="B(6w) - B(3w)",x="Average mobility proportion in 3w-6w",title="B1-B0 in 3w~6w v.s. Average full mobility proportion \nOnly Micropolitan Counties",size="Log of Population Density",alpha="Log of Population Density",fill="Majority Teaching Method")+geom_text(data =B_diff_micro%>%filter(major_teaching=="On Premises"),aes(label=COUNTY),color='black',size=3,hjust=1.1, vjust=0.1)
+ggsave("p2.png",width = 7.5,height = 6)
 ```
 
 ### B1-B0 dot plots for each group
@@ -165,5 +177,69 @@ na.omit(B0B1)%>%
 ggsave("p3.png",width = 10,height = 4)
 ```
 
+## Confounders
+
+```{r}
+library(ggpubr)
+library(PMCMRplus)
+require(DescTools)
+
+teaching_profile <- ohio_profile%>%
+  inner_join(wide_teaching_enroll,by=c("County"="county"))
+teaching_profile$major_teaching <- factor(teaching_profile$major_teaching,levels = c("On Premises","Hybrid","Online Only"))
+
+profile_major_teaching.aov <- aov(Percent.uninsured ~ major_teaching,data = teaching_profile)
+summary(profile_major_teaching.aov)
+
+# p-value of .012
+stat.test <- PostHocTest(profile_major_teaching.aov, method = "duncan")$major_teaching %>%
+  as.data.frame()%>%
+  rownames_to_column("group") %>%
+  separate(group,"-", into = c("group1","group2")) %>%
+  mutate(pval = round(pval,3),
+         p = case_when(pval <= .01~ "**",
+                       pval <= .05 ~ "*",
+                       TRUE ~ "NS"))%>%
+  select(group1, group2, pval, p)
+
+
+
+teaching_profile%>%
+  ggplot(aes(x=major_teaching,y=Percent.uninsured))+geom_boxplot(aes(fill=major_teaching),width=0.6)+
+  stat_compare_means(method = "anova",size=6,label.y.npc=0.85)+ 
+  stat_pvalue_manual(stat.test, label = "p",y.position = 1, step.increase = 0.15,size = 6,bracket.nudge.y = 8)+
+  labs(title="Percent of Uninsured Population by Teaching Method",x="Majority Teaching Method",y="Percent of uninsured population",caption = "Post-hoc pairwise testing with Duncan Method")+
+  team_theme+theme(legend.position = "")
+
+ggsave("p3.png",width = 6.5,height = 6)
+```
+
+
+
+```{r}
+
+senior_major_teaching.aov <- aov(Percent.Population.65..yrs~ major_teaching,data = teaching_profile)
+
+summary(senior_major_teaching.aov)
+
+# p-value of .012
+stat.test <- PostHocTest(senior_major_teaching.aov, method = "duncan")$major_teaching %>%
+  as.data.frame()%>%
+  rownames_to_column("group") %>%
+  separate(group,"-", into = c("group1","group2")) %>%
+  mutate(pval = round(pval,3),
+         p = case_when(pval <= .01~ "**",
+                       pval <= .05 ~ "*",
+                       TRUE ~ "NS"))%>%
+  select(group1, group2, pval, p)
+
+teaching_profile%>%
+  ggplot(aes(x=major_teaching,y=Percent.Population.65..yrs))+geom_boxplot(aes(fill=major_teaching),width=0.6)+
+  stat_compare_means(method = "anova",size=6,label.y.npc=0.95)+ 
+  stat_pvalue_manual(stat.test, label = "p",y.position = 1, step.increase = 0.15,size = 5,bracket.nudge.y = 2)+
+  labs(title="Percent of 65years+ Population by Teaching Method",x="Major Teaching Method",y="Percent of 65+yrs population",fill="Majority Teaching Method",caption = "Post-hoc pairwise testing with Duncan Method")+team_theme+theme(legend.position = "")
+
+ggsave("p3.png",width = 6.5,height = 6)
+```
 
 
