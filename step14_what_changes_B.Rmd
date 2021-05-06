@@ -113,7 +113,15 @@ B_diff%>%
   drop_na(major_teaching)%>%
   ggplot(aes(y=Metropolitan.Status,x=new.slope.diff2,fill=Metropolitan.Status))+geom_boxplot()+team_theme+theme(legend.position = "")+labs(x="B(6w) - B(3w)",y="Metropolitan Status",title="Distribution of B(6 weeks after) minus B(3 weeks after)")+
   scale_fill_brewer(palette = "Reds",direction = -1) 
+
 ```
+
+```{r}
+B_diff_micro%>%filter(COUNTY=="CHAMPAIGN")
+B_diff_micro%>%filter(COUNTY=="DEFIANCE")
+B_diff_micro%>%filter(COUNTY=="MERCER")
+```
+
 
 ## Redo the plots but only with Micro counties
 
@@ -126,15 +134,12 @@ B_diff_micro <- B_diff%>%
 
 B_diff_micro%>%
   ggplot(aes(x=avg_full_work_prob,y=new.slope.diff,group=major_teaching,color=major_teaching))+geom_point(aes(size=log(Population.density),alpha=log(Population.density)))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+labs(y="B(3w) - B(0w)",x="Average mobility proportion in 0w-3w",title="B1-B0 in 0w~3w v.s. Average full mobility proportion\nOnly Micropolitan Counties",size="Log of Population Density",alpha="Log of Population Density",fill="Majority Teaching Method",fill="Majority Teaching Method")+team_theme+geom_text(data =B_diff_micro%>%filter(major_teaching=="On Premises"),aes(label=COUNTY),color='black',size=3,hjust=1.1, vjust=0.3,size=6)
-ggsave("p1.png",width = 7.5,height = 6)
+#ggsave("p1.png",width = 7.5,height = 6)
 
-B_diff_micro%>%filter(COUNTY=="CHAMPAIGN")
-B_diff_micro%>%filter(COUNTY=="DEFIANCE")
-B_diff_micro%>%filter(COUNTY=="MERCER")
 
 B_diff_micro%>%
   ggplot(aes(x=log(Population.density),y=new.slope.diff2,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg2_full_work_prob,alpha=avg2_full_work_prob))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+team_theme+labs(y="B(6w) - B(3w)",x="Log of Population Density",title="B1-B0 in 3w~6w v.s. Log of Population Density\nOnly Micropolitan Counties",color="Majority Teaching Method",size = "3w~6w\nAveraged %6hr+ Away Home",alpha= "3w~6w\nAveraged %6hr+ Away Home" ,fill="Majority Teaching Method")+geom_text(data =B_diff_micro%>%filter(major_teaching=="On Premises"),aes(label=COUNTY),color='black',size=3,hjust=1.1, vjust=0.3)
-ggsave("p2.png",width = 7.5,height = 6)
+#ggsave("p2.png",width = 7.5,height = 6)
 
 ```
 
