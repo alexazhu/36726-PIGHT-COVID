@@ -565,6 +565,9 @@ ohio_profile%>%
 ggsave("micro_map.png", width = 10, height = 5)
 ```
 
+
+## Change in Growth
+
 ```{r}
 ## Filter only the micro counties
 B_diff_micro <- B_diff%>%
@@ -577,8 +580,9 @@ B_diff_micro%>%
   labs(y="Change in Growth",x="Average mobility proportion in 0w-3w",
        title="Change in Growth between B(0) and B(3)\nOnly Micropolitan Counties",
        color="Majority Teaching Method",
-       size = "0w~3w\nAveraged %6hr+ Away Home",
-       alpha= "0w~3w\nAveraged %6hr+ Away Home")+scale_color_manual(values=col_theme)+theme(legend.position = "bottom")+team_theme+geom_text(data =B_diff_micro%>%filter(major_teaching=="On Premises"),aes(label=COUNTY),color='black',size=3,hjust=1.1, vjust=0.3,size=6)
+       size = "Log Population Density",
+       alpha= "Log Population Density")+
+  scale_color_manual(values=col_theme)+theme(legend.position = "bottom")+team_theme+geom_text(data =B_diff_micro%>%filter(major_teaching=="On Premises"),aes(label=COUNTY),color='black',size=3,hjust=1.1, vjust=0.3,size=6)
 ggsave("p1.png",width = 7.5,height = 6)
 
 B_diff_micro%>%
@@ -586,12 +590,15 @@ B_diff_micro%>%
   labs(y="Change in Growth",x="Average mobility proportion in 3w-6w",
        title="Change in Growth between B(3) and B(6)\nOnly Micropolitan Counties",
        color="Majority Teaching Method",
-       size = "3w~6w\nAveraged %6hr+ Away Home",
-       alpha= "3w~6w\nAveraged %6hr+ Away Home")+scale_color_manual(values=col_theme)+theme(legend.position = "bottom")+team_theme+geom_text(data =B_diff_micro%>%filter(major_teaching=="On Premises"),aes(label=COUNTY),color='black',size=3,hjust=1.1, vjust=0.3,size=6)
+       size ="Log Population Density",
+       alpha= "Log Population Density")+
+  scale_color_manual(values=col_theme)+theme(legend.position = "bottom")+team_theme+geom_text(data =B_diff_micro%>%filter(major_teaching=="On Premises"),aes(label=COUNTY),color='black',size=3,hjust=1.1, vjust=0.3,size=6)
 ggsave("p2.png",width = 7.5,height = 6)
 ```
 
 ```{r}
+#Before reopen
+##3w-0w
 B_diff_micro%>%
   ggplot(aes(x=log(Population.density),y=new.slope.diff,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg_full_work_prob,alpha=avg_full_work_prob))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+
   labs(y="Change in Growth",x="Log of Population Density",
@@ -599,8 +606,36 @@ B_diff_micro%>%
        color="Majority Teaching Method",
        size = "0w~3w\nAveraged %6hr+ Away Home",
        alpha= "0w~3w\nAveraged %6hr+ Away Home" ,fill="Majority Teaching Method")+scale_color_manual(values=col_theme)+theme(legend.position = "bottom")+geom_text(data =B_diff_micro%>%filter(major_teaching=="On Premises"),aes(label=COUNTY),color='black',size=3,hjust=0.8, vjust=-0.2)
+ggsave("p1.png",width = 7.5,height = 6)
+##2w-(-1w)
+B_diff_micro%>%
+  ggplot(aes(x=log(Population.density),y=new.slope.diff2m1,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg_full_work_prob_m1w2w,alpha=avg_full_work_prob_m1w2w))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+
+  labs(y="Change in Growth",x="Log of Population Density",
+       title="Change in Growth between of B(-1) and B(2)\nOnly Micropolitan Counties",
+       color="Majority Teaching Method",
+       size = "-1w~2w\nAveraged %6hr+ Away Home",
+       alpha= "-1w~2w\nAveraged %6hr+ Away Home" ,fill="Majority Teaching Method")+scale_color_manual(values=col_theme)+theme(legend.position = "bottom")+geom_text(data =B_diff_micro%>%filter(major_teaching=="On Premises"),aes(label=COUNTY),color='black',size=3,hjust=0.8, vjust=-0.2)
+ggsave("p2.png",width = 7.5,height = 6)
+##1w-(-2w)
+B_diff_micro%>%
+  ggplot(aes(x=log(Population.density),y=new.slope.diff1m2,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg_full_work_prob_m2w1w,alpha=avg_full_work_prob_m2w1w))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+
+  labs(y="Change in Growth",x="Log of Population Density",
+       title="Change in Growth between of B(-2) and B(1)\nOnly Micropolitan Counties",
+       color="Majority Teaching Method",
+       size = "-2w~1w\nAveraged %6hr+ Away Home",
+       alpha= "-2w~1w\nAveraged %6hr+ Away Home" ,fill="Majority Teaching Method")+scale_color_manual(values=col_theme)+theme(legend.position = "bottom")+geom_text(data =B_diff_micro%>%filter(major_teaching=="On Premises"),aes(label=COUNTY),color='black',size=3,hjust=0.8, vjust=-0.2)
 ggsave("p3.png",width = 7.5,height = 6)
-
+##0w-(-3w)
+B_diff_micro%>%
+  ggplot(aes(x=log(Population.density),y=new.slope.diff0m3,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg_full_work_prob_m3w0w,alpha=avg_full_work_prob_m3w0w))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+
+  labs(y="Change in Growth",x="Log of Population Density",
+       title="Change in Growth between of B(-3) and B(0)\nOnly Micropolitan Counties",
+       color="Majority Teaching Method",
+       size = "-3w~0w\nAveraged %6hr+ Away Home",
+       alpha= "-3w~0w\nAveraged %6hr+ Away Home" ,fill="Majority Teaching Method")+scale_color_manual(values=col_theme)+theme(legend.position = "bottom")+geom_text(data =B_diff_micro%>%filter(major_teaching=="On Premises"),aes(label=COUNTY),color='black',size=3,hjust=0.8, vjust=-0.2)
+ggsave("p4.png",width = 7.5,height = 6)
+#After reopen
+##6w-3w
 B_diff_micro%>%
   ggplot(aes(x=log(Population.density),y=new.slope.diff2,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg2_full_work_prob,alpha=avg2_full_work_prob))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+
   labs(y="Change in Growth",x="Log of Population Density",
@@ -608,12 +643,40 @@ B_diff_micro%>%
        color="Majority Teaching Method",
        size = "3w~6w\nAveraged %6hr+ Away Home",
        alpha= "3w~6w\nAveraged %6hr+ Away Home" ,fill="Majority Teaching Method")+scale_color_manual(values=col_theme)+theme(legend.position = "bottom")+geom_text(data =B_diff_micro%>%filter(major_teaching=="On Premises"),aes(label=COUNTY),color='black',size=3,hjust=1.1, vjust=0.3)
-ggsave("p4.png",width = 7.5,height = 6)
+ggsave("p5.png",width = 7.5,height = 6)
+##5w-2w
+B_diff_micro%>%
+  ggplot(aes(x=log(Population.density),y=new.slope.diff52,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg_full_work_prob_2w5w,alpha=avg_full_work_prob_2w5w))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+
+  labs(y="Change in Growth",x="Log of Population Density",
+       title="Change in Growth between B(2) and B(5)\nOnly Micropolitan Counties",
+       color="Majority Teaching Method",
+       size = "2w~5w\nAveraged %6hr+ Away Home",
+       alpha= "2w~5w\nAveraged %6hr+ Away Home" ,fill="Majority Teaching Method")+scale_color_manual(values=col_theme)+theme(legend.position = "bottom")+geom_text(data =B_diff_micro%>%filter(major_teaching=="On Premises"),aes(label=COUNTY),color='black',size=3,hjust=1.1, vjust=0.3)
+ggsave("p6.png",width = 7.5,height = 6)
+##4w-1w
+B_diff_micro%>%
+  ggplot(aes(x=log(Population.density),y=new.slope.diff41,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg_full_work_prob_1w4w,alpha=avg_full_work_prob_1w4w))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+
+  labs(y="Change in Growth",x="Log of Population Density",
+       title="Change in Growth between B(1) and B(4)\nOnly Micropolitan Counties",
+       color="Majority Teaching Method",
+       size = "1w~4w\nAveraged %6hr+ Away Home",
+       alpha= "1w~4w\nAveraged %6hr+ Away Home" ,fill="Majority Teaching Method")+scale_color_manual(values=col_theme)+theme(legend.position = "bottom")+geom_text(data =B_diff_micro%>%filter(major_teaching=="On Premises"),aes(label=COUNTY),color='black',size=3,hjust=1.1, vjust=0.3)
+ggsave("p7.png",width = 7.5,height = 6)
+##7w-4w
+B_diff_micro%>%
+  ggplot(aes(x=log(Population.density),y=new.slope.diff74,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg_full_work_prob_4w7w,alpha=avg_full_work_prob_4w7w))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+
+  labs(y="Change in Growth",x="Log of Population Density",
+       title="Change in Growth between B(4) and B(7)\nOnly Micropolitan Counties",
+       color="Majority Teaching Method",
+       size = "4w~7w\nAveraged %6hr+ Away Home",
+       alpha= "4w~7w\nAveraged %6hr+ Away Home" ,fill="Majority Teaching Method")+scale_color_manual(values=col_theme)+theme(legend.position = "bottom")+geom_text(data =B_diff_micro%>%filter(major_teaching=="On Premises"),aes(label=COUNTY),color='black',size=3,hjust=1.1, vjust=0.3)
+ggsave("p8.png",width = 7.5,height = 6)
 
 ```
 
 
 
+## Accelaration
 ```{r}
 # questionable???
 B_diff_micro%>%
@@ -630,6 +693,121 @@ B_diff_micro%>%
        size = "3w~6w\nAveraged %6hr+ Away Home",
        alpha= "3w~6w\nAveraged %6hr+ Away Home" )+scale_color_manual(values=col_theme)+theme(legend.position = "bottom")
 ggsave("acc.png", width = 7, height = 5)
+```
+
+# Plotting B before/after school
+
+# for micropolitan counties only
+
+# B(6) - B(3) v.s. B(3) - B(0)
+```{r}
+B_diff %>%
+  filter(NCHS.Urban.Rural.Status == 'Micropolitan') %>%
+  ggplot(aes(x=new.slope.diff,y=new.slope.diff2, group=major_teaching,color=major_teaching))+ geom_point(aes(size=avg_full_work_prob,alpha=avg_full_work_prob))+theme_minimal()+team_theme+labs(y="Change in Growth after school reopens ",x="Change in Growth before school reopens",title="Change in Growth before/after school reopens\nOnly Micropolitan Counties",color="Majority Teaching Method", size = "0w~3w\nAveraged %6hr+ Away Home",alpha= "0w~3w\nAveraged %6hr+ Away Home" ,fill='Majority Teaching Method')+scale_color_manual(values=col_theme)+theme(legend.position = "bottom")
+
+ggsave("micro_b036.png",width = 7, height = 5)
+```
+
+
+
+# B(5) - B(2) v.s. B(2) - B(-1)
+```{r}
+B_diff %>%
+  filter(NCHS.Urban.Rural.Status == 'Micropolitan') %>%
+  ggplot(aes(x=new.slope.diff2m1,y=new.slope.diff52, group=major_teaching,color=major_teaching))+ geom_point(aes(size=avg_full_work_prob_m1w2w,alpha=avg_full_work_prob_m1w2w))+theme_minimal()+team_theme+labs(y="Change in Growth after school reopens ",x="Change in Growth before school reopens",title="Change in Growth before/after school reopens\nOnly Micropolitan Counties",color="Majority Teaching Method", size = "(-1)w~2w\nAveraged %6hr+ Away Home",alpha= "(-1)w~2w\nAveraged %6hr+ Away Home" ,fill='Majority Teaching Method')+scale_color_manual(values=col_theme)+theme(legend.position = "bottom")
+
+ggsave("micro_bm125.png",width = 7, height = 5)
+```
+
+
+# B(4) - B(1) v.s. B(1) - B(-2)
+```{r}
+B_diff %>%
+  filter(NCHS.Urban.Rural.Status == 'Micropolitan') %>%
+  ggplot(aes(x=new.slope.diff1m2,y=new.slope.diff41, group=major_teaching,color=major_teaching))+ geom_point(aes(size=avg_full_work_prob_m2w1w,alpha=avg_full_work_prob_m2w1w))+theme_minimal()+team_theme+labs(y="Change in Growth after school reopens ",x="Change in Growth before school reopens",title="Change in Growth before/after school reopens\nOnly Micropolitan Counties",color="Majority Teaching Method", size = "(-2)w~1w\nAveraged %6hr+ Away Home",alpha= "(-2)w~1w\nAveraged %6hr+ Away Home" ,fill='Majority Teaching Method')+scale_color_manual(values=col_theme)+theme(legend.position = "bottom")
+
+ggsave("micro_bm214.png",width = 7, height = 5)
+```
+
+# B(3) - B(0) v.s. B(0) - B(-3)
+```{r}
+B_diff %>%
+  filter(NCHS.Urban.Rural.Status == 'Micropolitan') %>%
+  ggplot(aes(x=new.slope.diff0m3,y=new.slope.diff, group=major_teaching,color=major_teaching))+ geom_point(aes(size=avg_full_work_prob_m3w0w,alpha=avg_full_work_prob_m3w0w))+theme_minimal()+team_theme+labs(y="Change in Growth after school reopens ",x="Change in Growth before school reopens",title="Change in Growth before/after school reopens\nOnly Micropolitan Counties",color="Majority Teaching Method", size = "(-3)w~0w\nAveraged %6hr+ Away Home",alpha= "(-3)w~0w\nAveraged %6hr+ Away Home" ,fill='Majority Teaching Method')+scale_color_manual(values=col_theme)+theme(legend.position = "bottom")
+
+ggsave("micro_bm303.png",width = 7, height = 5)
+```
+
+
+# B(7) - B(4) v.s. B(4) - B(1)
+```{r}
+B_diff %>%
+  filter(NCHS.Urban.Rural.Status == 'Micropolitan') %>%
+  ggplot(aes(x=new.slope.diff41,y=new.slope.diff74, group=major_teaching,color=major_teaching))+ geom_point(aes(size=avg_full_work_prob_1w4w,alpha=avg_full_work_prob_1w4w))+theme_minimal()+team_theme+labs(y="Change in Growth after school reopens ",x="Change in Growth before school reopens",title="Change in Growth before/after school reopens\nOnly Micropolitan Counties",color="Majority Teaching Method", size = "1w~4w\nAveraged %6hr+ Away Home",alpha= "1w~4w\nAveraged %6hr+ Away Home" ,fill='Majority Teaching Method')+scale_color_manual(values=col_theme)+theme(legend.position = "bottom")
+
+ggsave("micro_b147.png",width = 7, height = 5)
+```
+
+
+
+
+
+
+# Plotting (w lines)
+
+# micropolitan
+# B(6) - B(3) v.s. B(3) - B(0)
+```{r}
+B_diff %>%
+  filter(NCHS.Urban.Rural.Status == 'Micropolitan') %>%
+  ggplot(aes(x=new.slope.diff,y=new.slope.diff2, group=major_teaching,color=major_teaching))+ geom_point(aes(size=avg_full_work_prob,alpha=avg_full_work_prob))+theme_minimal()+geom_smooth(method = "lm", se=F,
+              formula = y ~ x,alpha=0.1)+team_theme+labs(y="Change in Growth after school reopens ",x="Change in Growth before school reopens",title="Change in Growth before/after school reopens\nOnly Micropolitan Counties",color="Majority Teaching Method", size = "0w~3w\nAveraged %6hr+ Away Home",alpha= "0w~3w\nAveraged %6hr+ Away Home" ,fill='Majority Teaching Method')+scale_color_manual(values=col_theme)+theme(legend.position = "bottom")
+
+ggsave("micro_b036_lines.png",width = 7, height = 5)
+```
+
+
+
+# B(5) - B(2) v.s. B(2) - B(-1)
+```{r}
+B_diff %>%
+  filter(NCHS.Urban.Rural.Status == 'Micropolitan') %>%
+  ggplot(aes(x=new.slope.diff2m1,y=new.slope.diff52, group=major_teaching,color=major_teaching))+ geom_point(aes(size=avg_full_work_prob_m1w2w,alpha=avg_full_work_prob_m1w2w))+geom_smooth(method = "lm", se=F,
+              formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+labs(y="Change in Growth after school reopens ",x="Change in Growth before school reopens",title="Change in Growth before/after school reopens\nOnly Micropolitan Counties",color="Majority Teaching Method", size = "(-1)w~2w\nAveraged %6hr+ Away Home",alpha= "(-1)w~2w\nAveraged %6hr+ Away Home" ,fill='Majority Teaching Method')+scale_color_manual(values=col_theme)+theme(legend.position = "bottom")
+
+ggsave("micro_bm125_lines.png",width = 7, height = 5)
+```
+
+
+# B(4) - B(1) v.s. B(1) - B(-2)
+```{r}
+B_diff %>%
+  filter(NCHS.Urban.Rural.Status == 'Micropolitan') %>%
+  ggplot(aes(x=new.slope.diff1m2,y=new.slope.diff41, group=major_teaching,color=major_teaching))+ geom_point(aes(size=avg_full_work_prob_m2w1w,alpha=avg_full_work_prob_m2w1w))+geom_smooth(method = "lm", se=F,
+              formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+labs(y="Change in Growth after school reopens ",x="Change in Growth before school reopens",title="Change in Growth before/after school reopens\nOnly Micropolitan Counties",color="Majority Teaching Method", size = "(-2)w~1w\nAveraged %6hr+ Away Home",alpha= "(-2)w~1w\nAveraged %6hr+ Away Home" ,fill='Majority Teaching Method')+scale_color_manual(values=col_theme)+theme(legend.position = "bottom")
+
+ggsave("micro_bm214_lines.png",width = 7, height = 5)
+```
+
+# B(3) - B(3) v.s. B(0) - B(-3)
+```{r}
+B_diff %>%
+  filter(NCHS.Urban.Rural.Status == 'Micropolitan') %>%
+  ggplot(aes(x=new.slope.diff0m3,y=new.slope.diff, group=major_teaching,color=major_teaching))+ geom_point(aes(size=avg_full_work_prob_m3w0w,alpha=avg_full_work_prob_m3w0w))+geom_smooth(method = "lm", se=F,
+              formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+labs(y="Change in Growth after school reopens ",x="Change in Growth before school reopens",title="Change in Growth before/after school reopens\nOnly Micropolitan Counties",color="Majority Teaching Method", size = "(-3)w~0w\nAveraged %6hr+ Away Home",alpha= "(-3)w~0w\nAveraged %6hr+ Away Home" ,fill='Majority Teaching Method')+scale_color_manual(values=col_theme)+theme(legend.position = "bottom")
+
+ggsave("micro_bm303_lines.png",width = 7, height = 5)
+```
+
+
+# B(7) - B(4) v.s. B(4) - B(1)
+```{r}
+B_diff %>%
+  filter(NCHS.Urban.Rural.Status == 'Micropolitan') %>%
+  ggplot(aes(x=new.slope.diff41,y=new.slope.diff74, group=major_teaching,color=major_teaching))+ geom_point(aes(size=avg_full_work_prob_1w4w,alpha=avg_full_work_prob_1w4w))+geom_smooth(method = "lm", se=F,
+              formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+labs(y="Change in Growth after school reopens ",x="Change in Growth before school reopens",title="Change in Growth before/after school reopens\nOnly Micropolitan Counties",color="Majority Teaching Method", size = "1w~4w\nAveraged %6hr+ Away Home",alpha= "1w~4w\nAveraged %6hr+ Away Home" ,fill='Majority Teaching Method')+scale_color_manual(values=col_theme)+theme(legend.position = "bottom")
+
+ggsave("micro_b147_lines.png",width = 7, height = 5)
 ```
 
 
