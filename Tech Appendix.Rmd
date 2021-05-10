@@ -477,20 +477,15 @@ na.omit(B0B1)%>%
   filter(NCHS.Urban.Rural.Status=="Micropolitan")%>%
   drop_na(major_teaching)%>%
   ggplot(aes(x=major_teaching,y=max_B1))+
-  geom_boxplot(aes(fill=major_teaching))+ylim(c(0,0.05))+
-  stat_compare_means(method = "anova",size=6,label.y.npc=0.96,label.x.npc = 0.4)+ 
-  stat_pvalue_manual(stat.test, label = "p",y.position = 0.03, step.increase = 0.15,
-                     size = 6,bracket.nudge.y = 0.001)+
-  team_theme+theme(legend.position = "bottom")+
-  labs(x="Max B",y="Urban-Rural Status",title="Distribution of Max B in Micropolitan Counties",
+  geom_boxplot(aes(fill=major_teaching))+
+  #ylim(c(0,0.05))+
+  #stat_compare_means(method = "anova",size=6,label.y.npc=0.96,label.x.npc = 0.4)+ 
+  #stat_pvalue_manual(stat.test, label = "p",y.position = 0.03, step.increase = 0.15,
+   #                  size = 6,bracket.nudge.y = 0.001)+
+  team_theme+
+  theme(legend.position = " ")+
+  labs(y="Max Growth Coefficient B",x="Majority Teaching Method",title="Distribution of Maximum Growth Coefficient in Micropolitan Counties",
        fill="Majority Teaching Method")+
-  scale_color_manual(values=col_theme)+
-  grid_theme+theme(legend.text = element_text(size=12),
-                   legend.title = element_text(size=12),
-                   axis.text = element_text(size=11),
-                   title=element_text(size=14),strip.text.x = element_text(
-        size = 10, face = "bold.italic"
-        ))+
   scale_fill_manual(values=col_theme)
 
 ggsave("maxB_micro.png",width = 6,height = 6)
@@ -618,13 +613,29 @@ ohio_profile%>%
   left_join(wide_teaching_enroll[,c("county","major_teaching")],
             by = c("County" = "county"))%>%
   drop_na(major_teaching)%>%
-  ggplot(aes(y=NCHS.Urban.Rural.Status,x=log(Population.density),fill=major_teaching))+facet_grid(~major_teaching)+geom_boxplot()+labs(fill="Majority Teaching \nMethod",size="Averaged \n%6hr+ Away Home",title="Distribution of Log Population Density \nby Rural-urban Status",x="Log Population Density", y= "Rural-urban Status")+team_theme+scale_fill_manual(values=col_theme)+theme(legend.position = "bottom")
-#ggsave("pop_dist.png", width = 10, height = 5)
+  ggplot(aes(y=NCHS.Urban.Rural.Status,x=log(Population.density),
+             fill=major_teaching))+
+  facet_grid(~major_teaching)+
+  geom_boxplot()+
+  labs(fill="Majority Teaching \nMethod",
+       size="Averaged \n%6hr+ Away Home",
+       title="Distribution of Log Population Density \nby Rural-urban Status",
+       x="Log Population Density", y= "Rural-urban Status")+
+  team_theme+
+  scale_fill_manual(values=col_theme)+
+  theme(legend.position = "bottom")
+ggsave("pop_dist.png", width = 10, height = 5)
 
 # diff B1 vs RURAL
 B_diff%>%
   drop_na(major_teaching)%>%
-  ggplot(aes(y=NCHS.Urban.Rural.Status,x=new.slope.diff2,fill=major_teaching))+facet_grid(~major_teaching)+geom_boxplot()+labs(fill="Majority Teaching Method",size="Averaged \n%6hr+ Away Home",title="Distribution of B(6 weeks after) minus B(3 weeks after) \nby Rural-urban Status",x="B(6w) - B(3w)", y= "Rural-urban Status")+team_theme+scale_fill_manual(values=col_theme)+theme(legend.position = "bottom")
+  ggplot(aes(y=NCHS.Urban.Rural.Status,x=new.slope.diff2,fill=major_teaching))+
+  facet_grid(~major_teaching)+
+  geom_boxplot()+
+  labs(fill="Majority Teaching Method",size="Averaged \n%6hr+ Away Home",
+       title="Distribution of B(6 weeks after) minus B(3 weeks after) \nby Rural-urban Status",
+       x="B(6w) - B(3w)", y= "Rural-urban Status")+
+  team_theme+scale_fill_manual(values=col_theme)+theme(legend.position = "bottom")
 ```
 
 
@@ -700,7 +711,9 @@ B_diff_micro%>%
        color="Majority Teaching Method",
        size = "0w~3w\nAveraged %6hr+ Away Home",
        alpha= "0w~3w\nAveraged %6hr+ Away Home")+
-  scale_color_manual(values=col_theme)+theme(legend.position = "bottom")+team_theme+
+  scale_color_manual(values=col_theme)+
+  theme(legend.position = "bottom")+
+  team_theme+
   geom_text(data=onpremise_text,aes(label=County),
             color='black',size=4,hjust=0.6, vjust=-0.1)
 ggsave("acc_mob_micro.png",width = 6.5,height = 6)
@@ -713,7 +726,8 @@ B_diff_micro%>%
        color="Majority Teaching Method",
        size = "0w~3w\nAveraged %6hr+ Away Home",
        alpha= "0w~3w\nAveraged %6hr+ Away Home")+
-  scale_color_manual(values=col_theme)+theme(legend.position = "bottom")+team_theme+
+  scale_color_manual(values=col_theme)+theme(legend.position = "bottom")+
+  team_theme+
   geom_text(data=onpremise_text,aes(label=County),
             color='black',size=4,hjust=0.6, vjust=-0.1)
 ggsave("acc2_mob_micro.png",width = 6.5,height = 6)
@@ -723,25 +737,39 @@ ggsave("acc2_mob_micro.png",width = 6.5,height = 6)
 
 ```{r}
 B_diff_micro%>%
-  ggplot(aes(x=log(Population.density),y=new.slope.diff,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg_full_work_prob,alpha=avg_full_work_prob))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+team_theme+
+  ggplot(aes(x=log(Population.density),y=new.slope.diff,
+             group=major_teaching,color=major_teaching))+
+  geom_point(aes(size=avg_full_work_prob,alpha=avg_full_work_prob))+
+  geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+
+  team_theme+
   labs(y="Acceleration",x="Log of Population Density",
        title="Difference in slope of B(0w) and B(3w)\nOnly Micropolitan Counties",
        color="Majority Teaching Method",
        size = "0w~3w\nAveraged %6hr+ Away Home",
-       alpha= "0w~3w\nAveraged %6hr+ Away Home" ,fill="Majority Teaching Method")+scale_color_manual(values=col_theme)+theme(legend.position = "bottom")+geom_text(data = onpremise_text,aes(label=County),color='black',size=4,hjust=0.6, vjust=-0.8)
+       alpha= "0w~3w\nAveraged %6hr+ Away Home" ,fill="Majority Teaching Method")+
+  scale_color_manual(values=col_theme)+
+  theme(legend.position = "bottom")+
+  geom_text(data = onpremise_text,aes(label=County),
+            color='black',size=4,hjust=0.6, vjust=-0.8)
 
 ggsave("acc_pop_micro.png",width = 7.5,height = 6)
 
 
 B_diff_micro%>%
-  ggplot(aes(x=log(Population.density),y=new.slope.diff2,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg2_full_work_prob,alpha=avg2_full_work_prob))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+team_theme+
+  ggplot(aes(x=log(Population.density),y=new.slope.diff2,
+             group=major_teaching,color=major_teaching))+
+  geom_point(aes(size=avg2_full_work_prob,alpha=avg2_full_work_prob))+
+  geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+
+  team_theme+
   labs(y="Acceleration",x="Log of Population Density",
        title="Difference in slope of B(3w) and B(6w)\nOnly Micropolitan Counties",
        color="Majority Teaching Method",
        size = "3w~6w\nAveraged %6hr+ Away Home",
        alpha= "3w~6w\nAveraged %6hr+ Away Home" ,fill="Majority Teaching Method")+
-  scale_color_manual(values=col_theme)+theme(legend.position = "bottom")+
-  geom_text(data=onpremise_text,aes(label=County),color='black',size=4,hjust=0.6, vjust=-0.1)
+  scale_color_manual(values=col_theme)+
+  theme(legend.position = "bottom")+
+  geom_text(data=onpremise_text,aes(label=County),color='black',
+            size=4,hjust=0.6, vjust=-0.1)
 
 ggsave("acc2_pop_micro.png",width = 7.5,height = 6)
 
@@ -751,18 +779,18 @@ ggsave("acc2_pop_micro.png",width = 7.5,height = 6)
 
 ```{r}
 B_diff_micro%>%
-  ggplot(aes(x=log(Population.density),y=acc,
+  ggplot(aes(x=log(Population.density),y=diff_in_slope,
              group=major_teaching,color=major_teaching))+
   geom_point(aes(size=avg2_full_work_prob,alpha=avg2_full_work_prob))+
   geom_smooth(method = "lm", se=F,
               formula = y ~ x,alpha=0.1)+
-  theme_minimal()+
   team_theme+
   labs(y="Acceleration",x="Log of Population Density",
        title="Difference in slope of B(0w) and B(3w)\nOnly Micropolitan Counties",
-       color="Majority Teaching Method",
        size = "3w~6w\nAveraged %6hr+ Away Home",
-       alpha= "3w~6w\nAveraged %6hr+ Away Home" )+scale_color_manual(values=col_theme)+theme(legend.position = "bottom")
+       alpha= "3w~6w\nAveraged %6hr+ Away Home",
+       color="Majority Teaching Method")+
+  scale_color_manual(values=col_theme)+theme(legend.position = "bottom")
 #ggsave("acc.png", width = 7, height = 5)
 ```
 
@@ -850,8 +878,6 @@ teaching_profile%>%
 ## Gamma distribution for the time lengths from infections to deaths
 
 We know from previous study that the mean for this Gamma distribution is 23.9, with a coefficient of variation being 0.4.
-
-
 
 
 ```{r}
