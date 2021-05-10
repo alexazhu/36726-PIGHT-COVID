@@ -484,11 +484,11 @@ na.omit(B0B1)%>%
    #                  size = 6,bracket.nudge.y = 0.001)+
   team_theme+
   theme(legend.position = " ")+
-  labs(y="Max Growth Coefficient B",x="Majority Teaching Method",title="Distribution of Maximum Growth Coefficient in Micropolitan Counties",
+  labs(y="Max Growth Coefficient B",x="Majority Teaching Method",title="Distribution of Maximum Growth Coefficient \nin Micropolitan Counties",
        fill="Majority Teaching Method")+
   scale_fill_manual(values=col_theme)
 
-ggsave("maxB_micro.png",width = 6,height = 6)
+ggsave("maxB_micro.png",width = 6.5,height = 6)
 ```
 
 ## Max B vs. Mobility and Population Density
