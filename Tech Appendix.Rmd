@@ -315,28 +315,29 @@ cases_slope_teach$DATE <- as.Date(cases_slope_teach$DATE)
 
 ```{r}
 maxB1 <- cases_slope_teach%>%
-  group_by(COUNTY, .groups = 'drop')%>%
+  group_by(COUNTY)%>%
   filter(DATE >= as.Date("2020-08-18") & DATE<=as.Date("2020-12-15"))%>%
-  summarise(max_B1 = max(new.slope))
+  summarise(max_B1 = max(new.slope), .groups = 'drop')
+
 avgB1 <- cases_slope_teach%>%
-  group_by(COUNTY, .groups = 'drop')%>%
+  group_by(COUNTY)%>%
   filter(DATE >= as.Date("2020-08-18") & DATE<=as.Date("2020-12-15"))%>%
-  summarise(avg_B1 = mean(new.slope))
+  summarise(avg_B1 = mean(new.slope), .groups = 'drop')
 ## avg3w_B0 ## average B0 of the first 3 weeks of school reopening 
 ## avg1w_2w_B0 ## OR average B0s between  2020-08-18 -7days and +14days [before the rate bounce back around the dashed line]
 ## avg3w_bf_B0 ## OR average B0s between  2020-08-18 -21days and 2020-08-18 [before the rate bounce back around the dashed line]
 avgB0 <- cases_slope_teach%>%
-  group_by(COUNTY, .groups = 'drop')%>%
+  group_by(COUNTY)%>%
   filter(DATE > as.Date("2020-08-18") & DATE<as.Date(major_opendate)+21)%>%
-  summarise(avg3w_B0 = mean(new.slope))%>%
+  summarise(avg3w_B0 = mean(new.slope), .groups = 'drop')%>%
   left_join(cases_slope_teach%>%
-  group_by(COUNTY, .groups = 'drop')%>%
+  group_by(COUNTY)%>%
   filter(DATE > as.Date("2020-08-18")-7 & DATE<as.Date("2020-08-18")+14)%>%
-  summarise(avg1w_2w_B0 = mean(new.slope)),by="COUNTY")%>%
+  summarise(avg1w_2w_B0 = mean(new.slope)),by="COUNTY", .groups = 'drop')%>%
   left_join(cases_slope_teach%>%
-  group_by(COUNTY, .groups = 'drop')%>%
+  group_by(COUNTY)%>%
   filter(DATE < as.Date("2020-08-18") & DATE>=as.Date("2020-08-18")-21)%>%
-  summarise(avg3w_bf_B0 = mean(new.slope)),by="COUNTY")
+  summarise(avg3w_bf_B0 = mean(new.slope)),by="COUNTY", .groups = 'drop')
 #  B0 and B1
 B0B1 <- death_teaching%>%
   distinct(COUNTY,POPULATION,NCHS.Urban.Rural.Status,Population.density)%>%
