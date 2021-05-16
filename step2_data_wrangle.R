@@ -10,6 +10,7 @@ library(reshape2)
 OH_K12 <- read.csv("Processed Data/OH_K12_clean.csv")
 OH_K12$opendategrouped <- as.Date(OH_K12$opendategrouped)
 
+
 ################## teaching method ######################
 
 # aggregate OH_K12 data by #enrollments in each districts 

@@ -216,6 +216,7 @@ oh_k12 <- check_enroll%>%
   full_join(oh_k12,by = c('county','leaid'))%>%
   select(-leaid_enrollment,enrollment_1)
 
+
 ```
 
 

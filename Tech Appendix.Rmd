@@ -489,6 +489,24 @@ na.omit(B0B1)%>%
   scale_fill_manual(values=col_theme)
 
 ggsave("maxB_micro.png",width = 6.5,height = 6)
+
+
+
+na.omit(B0B1)%>%
+  drop_na(major_teaching)%>%
+  ggplot(aes(x=major_teaching,y=max_B1))+
+  geom_boxplot(aes(fill=major_teaching))+
+  #ylim(c(0,0.05))+
+  #stat_compare_means(method = "anova",size=6,label.y.npc=0.96,label.x.npc = 0.4)+ 
+  #stat_pvalue_manual(stat.test, label = "p",y.position = 0.03, step.increase = 0.15,
+   #                  size = 6,bracket.nudge.y = 0.001)+
+  team_theme+
+  theme(legend.position = " ")+
+  labs(y="Max Growth Coefficient B",x="Majority Teaching Method",title="Distribution of Maximum Growth Coefficient",
+       fill="Majority Teaching Method")+
+  scale_fill_manual(values=col_theme)
+
+ggsave("maxB.png",width = 6.5,height = 6)
 ```
 
 ## Max B vs. Mobility and Population Density
@@ -568,7 +586,7 @@ ggsave("maxB_pop_micro.png",width = 6.5,height = 6)
 B_diff%>%
   ggplot(aes(x=new.slope.diff,y=new.slope.diff2,group=major_teaching,color=major_teaching))+geom_point(aes(size=log(Population.density),alpha=log(Population.density)))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+team_theme+
   labs(y="B(6w) - B(3w)",x="B(3w) - B(0w)",
-       title="Acceleration before vs. after school reopen\nAll Counties",
+       title="Change in growth before vs. after school reopen\nAll Counties",
        color="Majority Teaching Method",
        size = "Log of Population Density",
        alpha= "Log of Population Density" ,fill="Majority Teaching Method")+
@@ -581,7 +599,7 @@ B_diff_micro%>%
   ggplot(aes(x=new.slope.diff,y=new.slope.diff2,group=major_teaching,color=major_teaching))+geom_point(aes(size=log(Population.density),alpha=log(Population.density)))+
   geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+team_theme+
   labs(y="B(6w) - B(3w)",x="B(3w) - B(0w)",
-       title="Acceleration before vs. after school reopen\nOnly Micropolitan Counties",
+       title="Change in growth before vs. after school reopen\nOnly Micropolitan Counties",
        color="Majority Teaching Method",
        size = "Log of Population Density",
        alpha= "Log of Population Density" ,fill="Majority Teaching Method")+
@@ -598,11 +616,11 @@ ggsave("B63vsB30_micro.png",width = 6.5,height = 6.5)
 # pop density plot
 B_diff%>%
   drop_na(major_teaching)%>%
-  ggplot(aes(x=log(Population.density),y=new.slope.diff2,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg2_full_work_prob,alpha=avg2_full_work_prob))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+team_theme+labs(y="B(6w) - B(3w)",x="Log of Population",title="B1-B0 vs Log of Population Density",color="Majority Teaching Method",size = "3w~6w\nAveraged %6hr+ Away Home",alpha= "3w~6w\nAveraged %6hr+ Away Home" )+scale_color_manual(values=col_theme)+theme(legend.position = "bottom")
+  ggplot(aes(x=log(Population.density),y=new.slope.diff2,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg2_full_work_prob,alpha=avg2_full_work_prob))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+team_theme+labs(y="B(6w) - B(3w)",x="Log of Population",title="Growth in 3w~6w vs Log of Population Density",color="Majority Teaching Method",size = "3w~6w\nAveraged %6hr+ Away Home",alpha= "3w~6w\nAveraged %6hr+ Away Home" )+scale_color_manual(values=col_theme)+theme(legend.position = "bottom")
 # mobility plot
 B_diff%>%
   drop_na(major_teaching)%>%
-  ggplot(aes(x=avg2_full_work_prob,y=new.slope.diff2,group=major_teaching,color=major_teaching))+geom_point(aes(size=log(Population.density),alpha=log(Population.density)))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+labs(y="B(6w) - B(3w)",x="Average mobility proportion during fall semester",title="B1-B0 vs Average full mobility proportion in 3w~6w\n Averaged %6hr+ Away Home",size="Log of Population Density",alpha="Log of Population Density",color="Majority Teaching Method")+scale_color_manual(values=col_theme)+theme(legend.position = "bottom")
+  ggplot(aes(x=avg2_full_work_prob,y=new.slope.diff2,group=major_teaching,color=major_teaching))+geom_point(aes(size=log(Population.density),alpha=log(Population.density)))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+labs(y="B(6w) - B(3w)",x="Average mobility proportion during fall semester",title="Growth in 3w~6w vs Average full mobility proportion in 3w~6w\n Averaged %6hr+ Away Home",size="Log of Population Density",alpha="Log of Population Density",color="Majority Teaching Method")+scale_color_manual(values=col_theme)+theme(legend.position = "bottom")
 ```
 
 ## Micropolitan Counties
@@ -706,7 +724,7 @@ onpremise_text <- B_diff_micro%>%
 ```{r}
 B_diff_micro%>%
   ggplot(aes(x=avg_full_work_prob,y=new.slope.diff,group=major_teaching,color=major_teaching))+geom_point(aes(size=log(Population.density),alpha=log(Population.density)))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+
-  labs(y="Acceleration",x="Average mobility proportion in 0w-3w",
+  labs(y="Change in Growth",x="Average mobility proportion in 0w-3w",
        title="Difference in slope of B(0w) and B(3w)\nOnly Micropolitan Counties",
        color="Majority Teaching Method",
        size = "0w~3w\nAveraged %6hr+ Away Home",
@@ -721,7 +739,7 @@ ggsave("acc_mob_micro.png",width = 6.5,height = 6)
 
 B_diff_micro%>%
   ggplot(aes(x=avg2_full_work_prob,y=new.slope.diff2,group=major_teaching,color=major_teaching))+geom_point(aes(size=log(Population.density),alpha=log(Population.density)))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+
-  labs(y="Acceleration",x="Average mobility proportion in 0w-3w",
+  labs(y="Change in Growth",x="Average mobility proportion in 0w-3w",
        title="Difference in slope of B(3w) and B(6w)\nOnly Micropolitan Counties",
        color="Majority Teaching Method",
        size = "0w~3w\nAveraged %6hr+ Away Home",
