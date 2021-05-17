@@ -13,6 +13,7 @@ knitr::opts_chunk$set(echo = TRUE,cache=TRUE,warning=FALSE,error = FALSE,message
 # Appendix 1: Ohio Maps
 
 ```{r,warning=FALSE,message=FALSE}
+## Set up aesthetic theme for all graphs generated in the report
 Sys.setlocale("LC_TIME", "English")
 library(ggrepel)
 library(cowplot)
@@ -37,14 +38,12 @@ team_theme <- grid_theme+
         strip.text.x = element_text(size = 10, face = "bold.italic"))
 ```
 
-## Teaching method, Population and Enrollment
-
-This section contains the percentage of different teaching methods, the number of enrolled students and population profile in counties.
+## 1.1 Geographical distribution of the majority teaching posture, population and student enrollmen tat county-level
 
 ```{r}
 ohio_map <- map_data("county") %>%subset(region=="ohio")%>%
   mutate(county=toupper(subregion))%>%select(long,lat,county,group)
-# create map plots
+# Map of proportion of students taking online-only classes
 wide_teaching_enroll%>%
   left_join(ohio_map,by='county')%>%
   mutate(Online_Only= Online_Only*100)%>%
@@ -54,7 +53,7 @@ wide_teaching_enroll%>%
   scale_fill_distiller(palette = "OrRd",direction = 1)+
   labs(fill='% Online Only')+
   theme(legend.position = "bottom",legend.text = element_text(size=),legend.title = element_text(size=20))
-# create map plots
+# Map of proportion of students taking on-premises classes
 wide_teaching_enroll%>%
   left_join(ohio_map,by='county')%>%
   mutate(On_Premises= On_Premises*100)%>%
@@ -64,7 +63,7 @@ wide_teaching_enroll%>%
   scale_fill_distiller(palette = "OrRd",direction = 1)+
   labs(fill='% On Premises')+
   theme(legend.position = "bottom",legend.text = element_text(size=),legend.title = element_text(size=20))
-# create map plots for population
+# Map of proportion of students taking hybrid classes
 wide_teaching_enroll%>%
   left_join(ohio_map,by='county')%>%
   mutate(Hybrid= Hybrid*100)%>%
@@ -75,7 +74,7 @@ wide_teaching_enroll%>%
   scale_fill_distiller(palette = "OrRd",direction = 1)+
   labs(fill='% Hybrid')+
   theme(legend.position = "bottom",legend.text = element_text(size=),legend.title = element_text(size=20))
-# create map plots
+# Map of population size
 cases%>%
   distinct(COUNTY,POPULATION)%>%
   left_join(ohio_map,by=c('COUNTY'='county'))%>%
@@ -89,7 +88,7 @@ cases%>%
         legend.title = element_text(size=12),
         legend.position = "bottom",
         legend.key.size = unit(2,"lines"))
-# create map plots
+# Map of student enrollments
 teachingmethod_enroll%>%
   distinct(county,county_enroll)%>%
   left_join(ohio_map,by=c('county'))%>%
@@ -97,13 +96,15 @@ teachingmethod_enroll%>%
   ggplot() + 
   geom_polygon(aes(x = long, y = lat, group = group, fill = county_enroll), color = "gray") + 
   coord_fixed(1.3) + theme_map() +
+  geom_text()
+  geom_text("Franklin",)+
   scale_fill_distiller(palette = "OrRd",direction = 1)+
   labs(fill='Enrollment/1000')+
   theme(legend.text = element_text(size=12),legend.title = element_text(size=12),
         legend.position = "bottom",legend.key.size = unit(2,"lines"))
 ```
 
-The following map shows the major teaching method in a certain county.
+## 1.2 Map of majority teaching posture at county-level
 
 ```{r}
 wide_teaching_enroll%>%
@@ -117,18 +118,7 @@ wide_teaching_enroll%>%
 ```
 
 
-## Covid deaths during fall semester and death proportion during fall semester
-
-This section shows the death profile in the county(both cumulative death numbers and death per 1000 people).
-
-```{r}
-getLabelPoint <- # Returns a county-named list of label points
-function(county) {Polygon(county[c('long', 'lat')])@labpt}
-centroids = by(ohio_map, ohio_map$county, getLabelPoint)# Returns list
-centroids2 <- do.call("rbind.data.frame", centroids)# Convert to Data Frame
-centroids2$county = str_to_title(rownames(centroids))
-names(centroids2) <- c('clong', 'clat', "county") # Appropriate Header
-```
+## 1.3 Geographical distribution of cumulative COVID-19 deaths and deaths incidence until 02/22/2021.
 
 ```{r}
 death_prop%>%
@@ -137,7 +127,7 @@ death_prop%>%
   geom_polygon(aes(x = long, y = lat, group=group,fill = CUMDEATHS), color = "gray")+
   coord_fixed(1.3) + theme_map() +
   scale_fill_distiller(palette = "OrRd",direction = 1)+
-  labs(fill='Cumulative Deaths \nuntil 2021-02-22')+
+  labs(fill='Cumulative deaths \nuntil 2021-02-22')+
   theme(legend.text = element_text(size=12),
         legend.title = element_text(size=12),legend.position = "bottom",
         legend.key.size = unit(2,"lines"))
@@ -149,15 +139,14 @@ death_prop%>%
                color = "gray") + 
   coord_fixed(1.3) + theme_map() +
   scale_fill_distiller(palette = "OrRd",direction = 1)+
-  labs(fill='Deaths per 1000 people \nuntil 2021-02-22')+
+  labs(fill='Cumulative deaths \nper 1000 people \nuntil 2021-02-22')+
   theme(legend.text = element_text(size=12),
         legend.title = element_text(size=12),
         legend.position = "bottom",
         legend.key.size = unit(2,"lines"))
-
 ```
 
-## Micropolitan Map
+## 1.4 Map of counties' Micropolitan status
 
 Since we reduced our county samples to micropolitan counties, we also show how micropolitan county distribute in Ohio and which teaching method they used. We can find that micropolitan counties are well-spread.
 
@@ -201,7 +190,7 @@ ohio_profile%>%
 
 # Appendix 2: Death Incidence
 
-## Data Process
+## 2.1 Data Processing
 
 ```{r message=FALSE, warning=FALSE}
 library(tidyverse)
@@ -476,9 +465,9 @@ cases_slope_teach$major_teaching <- factor(cases_slope_teach$major_teaching,leve
 cases_slope_teach$DATE <- as.Date(cases_slope_teach$DATE)
 ```
 
-## Select Max B
+## Compute the maximum B values for each county during the Fall semester
 
-Max B during the fall semester is used to meaure how severe the pandemic is in the county.
+Maximum B values represent the severity of the disease for the county during the Fall semester.
 
 ```{r}
 maxB1 <- cases_slope_teach%>%
@@ -517,9 +506,9 @@ B0B1$major_teaching <- factor(B0B1$major_teaching,levels = c("On Premises","Hybr
 ```
 
 
-## Aggregate counties by teaching method
+## Growth coefficient aggregation by counties majority teaching posture
 
-We aggregate the growth coefficient based on the major teaching method used, and draw a time series plot for different teahcing methods.
+We aggregate the growth coefficient based on the major teaching method used, and draw a time series plot for different teaching methods.
 
 ```{r}
 cases_slope_teach_agg <- cases_slope_teach %>%
