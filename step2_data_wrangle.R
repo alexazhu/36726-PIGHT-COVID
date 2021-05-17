@@ -370,8 +370,8 @@ B0B1 <- death_teaching%>%
   left_join(maxB1,by="COUNTY")%>%
   left_join(wide_teaching_enroll, by = c("COUNTY" = "county"))%>%
   left_join(avgB1,by="COUNTY")%>%
-  left_join(avgB0,by="COUNTY")%>%
-  left_join(avg_mobility,by="COUNTY")
+  left_join(avgB0,by="COUNTY")
+  #left_join(avg_mobility,by="COUNTY")
 
 ## ordering the teaching method factor to ensure the color order
 B0B1$major_teaching <- factor(B0B1$major_teaching,levels = c("On Premises","Hybrid","Online Only"))
