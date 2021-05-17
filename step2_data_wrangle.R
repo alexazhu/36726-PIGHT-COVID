@@ -134,8 +134,8 @@ major_reopening <- county_open_teaching_enroll%>%
   slice(which.max(opendate_prop))%>%
   rename(COUNTY=county,major_opendate=opendate)%>%
   distinct(COUNTY,major_opendate,opendate_prop)
-  
- 
+
+
 ################## OH CASES ######################
 
 ##########
@@ -191,7 +191,7 @@ mobility <- parttime_work%>%
   rename(part_work_prop_7d=value,part_work_std = stderr,part_work_sample_size=sample_size)%>%
   left_join(fulltime_work%>%
               rename(full_work_prop_7d=value,full_work_std = stderr,full_work_sample_size=sample_size,full_work_std = stderr),
-              by = c("geo_value","time_value"))%>%
+            by = c("geo_value","time_value"))%>%
   left_join(restaurant%>%
               rename(res_visit_by_pop = value),by = c("geo_value","time_value"))%>%
   left_join(bar%>%
@@ -233,6 +233,10 @@ county_policy_wide <- wide_teaching_enroll%>%
   full_join(death_prop, by = c("county"= "COUNTY")) %>%
   full_join(wide_studentmask_enroll, by = c("county"))%>%
   full_join(wide_staffmask_enroll, by = c("county"))
+
+
+county_policy_wide$major_teaching <- factor(county_policy_wide$major_teaching,
+                                            levels = c("On Premises","Hybrid","Online Only"))
 
 write.csv(county_policy_wide,"Processed Data/county_policy_aggregate_wide.csv")
 
@@ -364,14 +368,26 @@ avgB0 <- cases_slope_teach%>%
               filter(DATE < as.Date("2020-08-18") & DATE>=as.Date("2020-08-18")-21)%>%
               summarise(avg3w_bf_B0 = mean(new.slope)),by="COUNTY")
 
+avg_mobility <- case_mobility%>%
+  left_join(major_reopening,by=c("COUNTY"))%>%
+  group_by(COUNTY)%>%
+  filter(DATE >= as.Date("2020-08-18")& DATE <as.Date("2020-08-18") + 21)%>%
+  summarise(avg_full_work_prob = mean(full_work_prop_7d))%>%
+  left_join(case_mobility%>%
+              left_join(major_reopening,by=c("COUNTY"))%>%
+              group_by(COUNTY)%>%
+              filter(DATE >= as.Date("2020-08-18")+ 21 & DATE <=as.Date("2020-08-18") + 42)%>%
+              summarise(avg2_full_work_prob = mean(full_work_prop_7d)),
+            by="COUNTY")
+
 #  B0 and B1
 B0B1 <- death_teaching%>%
   distinct(COUNTY,POPULATION,NCHS.Urban.Rural.Status,Metropolitan.Status,Population.density)%>%
   left_join(maxB1,by="COUNTY")%>%
   left_join(wide_teaching_enroll, by = c("COUNTY" = "county"))%>%
   left_join(avgB1,by="COUNTY")%>%
-  left_join(avgB0,by="COUNTY")
-  #left_join(avg_mobility,by="COUNTY")
+  left_join(avgB0,by="COUNTY")%>%
+  left_join(avg_mobility,by="COUNTY")
 
 ## ordering the teaching method factor to ensure the color order
 B0B1$major_teaching <- factor(B0B1$major_teaching,levels = c("On Premises","Hybrid","Online Only"))
