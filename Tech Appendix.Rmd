@@ -111,7 +111,7 @@ wide_teaching_enroll%>%
   ggplot() + geom_polygon(aes(x = long, y = lat, group = group, fill = as.factor(major_teaching)), color = "white",alpha=0.9) + 
   coord_fixed(1.3) + theme_map() + 
   scale_fill_manual(values=col_theme)+ 
-  labs(fill='Majority teaching method')+
+  labs(fill='Majority teaching posture')+
   theme(legend.position = "bottom",legend.text = element_text(size=14),legend.title = element_text(size=14))
 ```
 
@@ -218,7 +218,7 @@ stat.test <- PostHocTest(fall_major_teaching.aov, method = "duncan")$major_teach
 library(ggpubr)
 ```
 
-## Death Prop Over Time by the Majority Teaching Method
+## Death Prop Over Time by the Majority teaching posture
 ```{r}
 case_policy_wide%>%
   group_by(DATE, major_teaching) %>%
@@ -246,7 +246,7 @@ case_policy_wide%>%
   ggtitle("Death Incidences Increase Faster for Red Counties ")+
   labs(x = "Date", y = "Cumulative Death Incidence / 1,000 people",
        subtitle = "Yellow area represents Fall Semester",
-       color = "Majority Teaching Method") +team_theme+ scale_colour_manual(values=col_theme)+scale_fill_manual(values=col_theme)
+       color = "Majority teaching posture") +team_theme+ scale_colour_manual(values=col_theme)+scale_fill_manual(values=col_theme)
 ```
 
 
@@ -267,7 +267,7 @@ ratio%>%
   annotate("text",label = as.Date("2020/11/24"),
            x = as.Date("2020/11/24"), y = .07, hjust = 1.1)+ 
   labs(x = "Date", y = "Cumulative deaths/cases ratio", 
-       color = "Majority Teaching Method",
+       color = "Majority teaching posture",
        subtitle = "Yellow area represents the fall semester (08/18 - 12/15)") + 
   theme(legend.position = "bottom")+team_theme+scale_color_manual(values=col_theme)
 ```
@@ -282,7 +282,7 @@ ggplot(fall_cases,aes(y = death_incidence_per_1000, x = major_teaching)) +
   ylim(c(0,3.5))+ 
   theme_bw()+ 
   labs(y = "Death Incidence / 1,000 people",x = "",
-       fill = "Majority Teaching Method",
+       fill = "Majority teaching posture",
        title = "Death Incidence in the Fall Semester",
        caption = "Pairwise p-values come from Duncan pairwise comparison test") +
   theme(legend.position = "bottom",
@@ -299,7 +299,7 @@ cases_slope <- read.csv("county_splines.csv", header = T)%>%
   select(COUNTY,DATE,POPULATION,CUMDEATHS,log_tot_deaths,tot.slope,NEWDEATHS,rev_NEWDEATHS,log_new_deaths,new.slope)
 # SHIFT THE DATE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 cases_slope$DATE <- as.Date(cases_slope$DATE)-24
-# get majority teaching method wide_teaching_enroll
+# get Majority teaching posture wide_teaching_enroll
 cases_slope_teach <-death_teaching%>%
   select(-DATE,-POPULATION,-CUMDEATHS,-NEWDEATHS)%>%
   distinct()%>%
@@ -371,7 +371,7 @@ ggplot(cases_slope_teach_agg, aes(x = DATE, color = major_teaching)) +
                 ymin=-Inf,ymax=Inf),
             color = NA,alpha=0.2, show.legend = F, fill = "orange") + 
   labs(x = "Date", y = "Log ( New Deaths + 1 )", 
-       color = "Majority Teaching Method",
+       color = "Majority teaching posture",
        caption = "Smoothing window set to every 4 weeks",
        subtitle = "Yellow area represents the fall semester (08/18 - 12/15)") + 
   geom_vline(xintercept = week3_after_start, lty = 2) + 
@@ -396,7 +396,7 @@ ggplot(cases_slope_teach_agg, aes(x = DATE, color = major_teaching)) +
   annotate("text",label = "6 Weeks After",
            x = as.Date("2020/08/18")+130, y = .06, hjust = 1.3)+ 
   labs(x = "Date", y = "Exponential Growth Coefficient", 
-       color = "Majority Teaching Method",
+       color = "Majority teaching posture",
        caption = "Smoothing window set to every 4 weeks",
        subtitle = "Yellow area represents the fall semester (08/18 - 12/15)") + 
   theme(legend.position = "bottom")+team_theme+scale_color_manual(values=col_theme)
@@ -447,7 +447,7 @@ na.omit(B0B1)%>%
   geom_boxplot()+
   team_theme+theme(legend.position = "bottom")+
   labs(x="Max B",y="Urban-Rural Status",title="Distribution of Max B",
-       fill="Majority Teaching Method")+
+       fill="Majority teaching posture")+
   scale_fill_manual(values=col_theme)+
   team_theme
 
@@ -484,8 +484,8 @@ na.omit(B0B1)%>%
    #                  size = 6,bracket.nudge.y = 0.001)+
   team_theme+
   theme(legend.position = " ")+
-  labs(y="Max Growth Coefficient B",x="Majority Teaching Method",title="Distribution of Maximum Growth Coefficient \nin Micropolitan Counties",
-       fill="Majority Teaching Method")+
+  labs(y="Max Growth Coefficient B",x="Majority teaching posture",title="Distribution of Maximum Growth Coefficient \nin Micropolitan Counties",
+       fill="Majority teaching posture")+
   scale_fill_manual(values=col_theme)
 
 ggsave("maxB_micro.png",width = 6.5,height = 6)
@@ -502,8 +502,8 @@ na.omit(B0B1)%>%
    #                  size = 6,bracket.nudge.y = 0.001)+
   team_theme+
   theme(legend.position = " ")+
-  labs(y="Max Growth Coefficient B",x="Majority Teaching Method",title="Distribution of Maximum Growth Coefficient",
-       fill="Majority Teaching Method")+
+  labs(y="Max Growth Coefficient B",x="Majority teaching posture",title="Distribution of Maximum Growth Coefficient",
+       fill="Majority teaching posture")+
   scale_fill_manual(values=col_theme)
 
 ggsave("maxB.png",width = 6.5,height = 6)
@@ -517,7 +517,7 @@ na.omit(B0B1)%>%
   ggplot(aes(x=avg_full_work_prob,y=max_B1,group=major_teaching,color=major_teaching))+
   geom_point(aes(size=log(Population.density),alpha=log(Population.density)))+
   geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+
-  labs(y="Max B",x="Averaged \n%6hr+ Away Home in Fall semester",title="Max B in Fall v.s. Average Mobility \nAll Counties",color="Majority Teaching Method",size = "Log of Population Density",alpha= "Log of Population Density" )+
+  labs(y="Max B",x="Averaged \n%6hr+ Away Home in Fall semester",title="Max B in Fall v.s. Average Mobility \nAll Counties",color="Majority teaching posture",size = "Log of Population Density",alpha= "Log of Population Density" )+
   team_theme+theme(legend.position = "bottom")+
   scale_color_manual(values=col_theme)
   
@@ -529,7 +529,7 @@ na.omit(B0B1)%>%
   ggplot(aes(x=log(Population.density),y=max_B1,group=major_teaching,color=major_teaching))+
   geom_point(aes(size=avg_full_work_prob,alpha=avg_full_work_prob))+
   geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+
-  labs(y="Max B",x="Log of Population Density",title="Max B in Fall v.s. Log of Population Density \nAll Counties",color="Majority Teaching Method",size = "Averaged \n%6hr+ Away Home in Fall semester",alpha= "Averaged \n%6hr+ Away Home in Fall semester" )+team_theme+theme(legend.position = "bottom")+
+  labs(y="Max B",x="Log of Population Density",title="Max B in Fall v.s. Log of Population Density \nAll Counties",color="Majority teaching posture",size = "Averaged \n%6hr+ Away Home in Fall semester",alpha= "Averaged \n%6hr+ Away Home in Fall semester" )+team_theme+theme(legend.position = "bottom")+
   scale_color_manual(values=col_theme)
 
 
@@ -547,7 +547,7 @@ na.omit(B0B1)%>%
   #geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+
   labs(y="Max B",x="Averaged \n%6hr+ Away Home in Fall semester",
        title="Max B in Fall v.s. Average Mobility \nOnly Micropolitan Counties",
-       color="Majority Teaching Method",
+       color="Majority teaching posture",
        size = "Log of Population Density",
        alpha= "Log of Population Density" )+
   team_theme+theme(legend.position = "bottom")+
@@ -569,7 +569,7 @@ na.omit(B0B1)%>%
   #geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+
   labs(y="Max B",x="Log of Population Density",
        title="Max B in Fall v.s. Log of Population Density \nOnly Micropolitan Counties",
-       color="Majority Teaching Method",
+       color="Majority teaching posture",
        size = "Averaged \n%6hr+ Away Home in Fall semester",
        alpha= "Averaged \n%6hr+ Away Home in Fall semester" )+
   team_theme+theme(legend.position = "bottom")+
@@ -587,9 +587,9 @@ B_diff%>%
   ggplot(aes(x=new.slope.diff,y=new.slope.diff2,group=major_teaching,color=major_teaching))+geom_point(aes(size=log(Population.density),alpha=log(Population.density)))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+team_theme+
   labs(y="B(6w) - B(3w)",x="B(3w) - B(0w)",
        title="Change in growth before vs. after school reopen\nAll Counties",
-       color="Majority Teaching Method",
+       color="Majority teaching posture",
        size = "Log of Population Density",
-       alpha= "Log of Population Density" ,fill="Majority Teaching Method")+
+       alpha= "Log of Population Density" ,fill="Majority teaching posture")+
   scale_color_manual(values=col_theme)+theme(legend.position = "bottom")+
   geom_hline(yintercept = 0,lty=2)+geom_vline(xintercept = 0,lty=2)
 
@@ -600,9 +600,9 @@ B_diff_micro%>%
   geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+team_theme+
   labs(y="B(6w) - B(3w)",x="B(3w) - B(0w)",
        title="Change in growth before vs. after school reopen\nOnly Micropolitan Counties",
-       color="Majority Teaching Method",
+       color="Majority teaching posture",
        size = "Log of Population Density",
-       alpha= "Log of Population Density" ,fill="Majority Teaching Method")+
+       alpha= "Log of Population Density" ,fill="Majority teaching posture")+
   scale_color_manual(values=col_theme)+theme(legend.position = "bottom")+
   geom_hline(yintercept = 0,lty=2)+geom_vline(xintercept = 0,lty=2)
 
@@ -616,11 +616,11 @@ ggsave("B63vsB30_micro.png",width = 6.5,height = 6.5)
 # pop density plot
 B_diff%>%
   drop_na(major_teaching)%>%
-  ggplot(aes(x=log(Population.density),y=new.slope.diff2,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg2_full_work_prob,alpha=avg2_full_work_prob))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+team_theme+labs(y="B(6w) - B(3w)",x="Log of Population",title="Growth in 3w~6w vs Log of Population Density",color="Majority Teaching Method",size = "3w~6w\nAveraged %6hr+ Away Home",alpha= "3w~6w\nAveraged %6hr+ Away Home" )+scale_color_manual(values=col_theme)+theme(legend.position = "bottom")
+  ggplot(aes(x=log(Population.density),y=new.slope.diff2,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg2_full_work_prob,alpha=avg2_full_work_prob))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+team_theme+labs(y="B(6w) - B(3w)",x="Log of Population",title="Growth in 3w~6w vs Log of Population Density",color="Majority teaching posture",size = "3w~6w\nAveraged %6hr+ Away Home",alpha= "3w~6w\nAveraged %6hr+ Away Home" )+scale_color_manual(values=col_theme)+theme(legend.position = "bottom")
 # mobility plot
 B_diff%>%
   drop_na(major_teaching)%>%
-  ggplot(aes(x=avg2_full_work_prob,y=new.slope.diff2,group=major_teaching,color=major_teaching))+geom_point(aes(size=log(Population.density),alpha=log(Population.density)))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+labs(y="B(6w) - B(3w)",x="Average mobility proportion during fall semester",title="Growth in 3w~6w vs Average full mobility proportion in 3w~6w\n Averaged %6hr+ Away Home",size="Log of Population Density",alpha="Log of Population Density",color="Majority Teaching Method")+scale_color_manual(values=col_theme)+theme(legend.position = "bottom")
+  ggplot(aes(x=avg2_full_work_prob,y=new.slope.diff2,group=major_teaching,color=major_teaching))+geom_point(aes(size=log(Population.density),alpha=log(Population.density)))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+labs(y="B(6w) - B(3w)",x="Average mobility proportion during fall semester",title="Growth in 3w~6w vs Average full mobility proportion in 3w~6w\n Averaged %6hr+ Away Home",size="Log of Population Density",alpha="Log of Population Density",color="Majority teaching posture")+scale_color_manual(values=col_theme)+theme(legend.position = "bottom")
 ```
 
 ## Micropolitan Counties
@@ -650,7 +650,7 @@ B_diff%>%
   ggplot(aes(y=NCHS.Urban.Rural.Status,x=new.slope.diff2,fill=major_teaching))+
   facet_grid(~major_teaching)+
   geom_boxplot()+
-  labs(fill="Majority Teaching Method",size="Averaged \n%6hr+ Away Home",
+  labs(fill="Majority teaching posture",size="Averaged \n%6hr+ Away Home",
        title="Distribution of B(6 weeks after) minus B(3 weeks after) \nby Rural-urban Status",
        x="B(6w) - B(3w)", y= "Rural-urban Status")+
   team_theme+scale_fill_manual(values=col_theme)+theme(legend.position = "bottom")
@@ -726,7 +726,7 @@ B_diff_micro%>%
   ggplot(aes(x=avg_full_work_prob,y=new.slope.diff,group=major_teaching,color=major_teaching))+geom_point(aes(size=log(Population.density),alpha=log(Population.density)))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+
   labs(y="Change in Growth",x="Average mobility proportion in 0w-3w",
        title="Difference in slope of B(0w) and B(3w)\nOnly Micropolitan Counties",
-       color="Majority Teaching Method",
+       color="Majority teaching posture",
        size = "0w~3w\nAveraged %6hr+ Away Home",
        alpha= "0w~3w\nAveraged %6hr+ Away Home")+
   scale_color_manual(values=col_theme)+
@@ -741,7 +741,7 @@ B_diff_micro%>%
   ggplot(aes(x=avg2_full_work_prob,y=new.slope.diff2,group=major_teaching,color=major_teaching))+geom_point(aes(size=log(Population.density),alpha=log(Population.density)))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+
   labs(y="Change in Growth",x="Average mobility proportion in 0w-3w",
        title="Difference in slope of B(3w) and B(6w)\nOnly Micropolitan Counties",
-       color="Majority Teaching Method",
+       color="Majority teaching posture",
        size = "0w~3w\nAveraged %6hr+ Away Home",
        alpha= "0w~3w\nAveraged %6hr+ Away Home")+
   scale_color_manual(values=col_theme)+theme(legend.position = "bottom")+
@@ -762,9 +762,9 @@ B_diff_micro%>%
   team_theme+
   labs(y="Acceleration",x="Log of Population Density",
        title="Difference in slope of B(0w) and B(3w)\nOnly Micropolitan Counties",
-       color="Majority Teaching Method",
+       color="Majority teaching posture",
        size = "0w~3w\nAveraged %6hr+ Away Home",
-       alpha= "0w~3w\nAveraged %6hr+ Away Home" ,fill="Majority Teaching Method")+
+       alpha= "0w~3w\nAveraged %6hr+ Away Home" ,fill="Majority teaching posture")+
   scale_color_manual(values=col_theme)+
   theme(legend.position = "bottom")+
   geom_text(data = onpremise_text,aes(label=County),
@@ -781,9 +781,9 @@ B_diff_micro%>%
   team_theme+
   labs(y="Acceleration",x="Log of Population Density",
        title="Difference in slope of B(3w) and B(6w)\nOnly Micropolitan Counties",
-       color="Majority Teaching Method",
+       color="Majority teaching posture",
        size = "3w~6w\nAveraged %6hr+ Away Home",
-       alpha= "3w~6w\nAveraged %6hr+ Away Home" ,fill="Majority Teaching Method")+
+       alpha= "3w~6w\nAveraged %6hr+ Away Home" ,fill="Majority teaching posture")+
   scale_color_manual(values=col_theme)+
   theme(legend.position = "bottom")+
   geom_text(data=onpremise_text,aes(label=County),color='black',
@@ -807,7 +807,7 @@ B_diff_micro%>%
        title="Difference in slope of B(0w) and B(3w)\nOnly Micropolitan Counties",
        size = "3w~6w\nAveraged %6hr+ Away Home",
        alpha= "3w~6w\nAveraged %6hr+ Away Home",
-       color="Majority Teaching Method")+
+       color="Majority teaching posture")+
   scale_color_manual(values=col_theme)+theme(legend.position = "bottom")
 #ggsave("acc.png", width = 7, height = 5)
 ```
@@ -849,7 +849,7 @@ ratio%>%
   annotate("text",label = as.Date("2020/11/24"),
            x = as.Date("2020/11/24"), y = .07, hjust = 1.1)+ 
   labs(x = "Date", y = "Cumulative deaths/cases ratio", 
-       color = "Majority Teaching Method",
+       color = "Majority teaching posture",
        subtitle = "Yellow area represents the fall semester (08/18 - 12/15)") + 
   theme(legend.position = "bottom")+team_theme+scale_color_manual(values=col_theme)
 ```
@@ -859,7 +859,7 @@ teaching_profile%>%
   ggplot(aes(x=major_teaching,y=Percent.uninsured))+geom_boxplot(aes(fill=major_teaching),width=0.6)+
   stat_compare_means(method = "anova",size=6,label.y.npc=0.85)+ 
   stat_pvalue_manual(stat.test, label = "p",y.position = 1, step.increase = 0.15,size = 6,bracket.nudge.y = 8)+
-  labs(title="Percent of Uninsured Population by Teaching Method",x="Majority Teaching Method",y="Percent of uninsured population",caption = "Post-hoc pairwise testing with Duncan Method")+
+  labs(title="Percent of Uninsured Population by Teaching Method",x="Majority teaching posture",y="Percent of uninsured population",caption = "Post-hoc pairwise testing with Duncan Method")+
   team_theme+theme(legend.position = "")+scale_fill_manual(values=col_theme)
 
 ggsave("p2.png",width = 6.5,height = 6)
@@ -884,7 +884,7 @@ teaching_profile%>%
   geom_boxplot(aes(fill=major_teaching),width=0.6)+
   stat_compare_means(method = "anova",size=6,label.y.npc=0.95)+ 
   stat_pvalue_manual(stat.test, label = "p",y.position = 1, step.increase = 0.15,size = 5,bracket.nudge.y = 2)+
-  labs(title="Percent of 65years+ Population by Teaching Method",x="Major Teaching Method",y="Percent of 65+yrs population",fill="Majority Teaching Method",caption = "Post-hoc pairwise testing with Duncan Method")+
+  labs(title="Percent of 65years+ Population by Teaching Method",x="Major Teaching Method",y="Percent of 65+yrs population",fill="Majority teaching posture",caption = "Post-hoc pairwise testing with Duncan Method")+
   team_theme+theme(legend.position = "")+
   scale_fill_manual(values=col_theme)
 
