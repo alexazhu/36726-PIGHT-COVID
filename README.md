@@ -1,10 +1,16 @@
 
 
-# Effect of School Policies on COVID-19 Transmission
+#  Are School aged children vectors of COVID-19 in Ohio? PH
 
 - Author: Ziyan Zhu, Cheyenne Ehman, Yixuan Luo, Zi Yang from CMU MSP class of 2021
 - Advisor: Valerie Ventura from Department of Statistics and Data Science at Carnegie Mellon University
-- Collaborator: PHIGHT COVID Team, Lakdawala Lab at University of Pittsburgh
+- Collaborator: PHIGHT COVID Team, Lakdawala Lab at [University of Pittsburgh](https://lakdawalalab.com/)
+
+## Presentation
+
+Check out our presentation for this project:
+[Presentation.pdf](https://drive.google.com/file/d/1441_agu39UHagUzzN2DfBd6OiRTnSVde/view?usp=sharing)
+
 
 ## Introduction
 
@@ -37,9 +43,5 @@
 ### Why We Choose Ohio State for Analysis?
 
 ![Why ohio](https://github.com/alexazhu/36726-PIGHT-COVID/blob/1f7f1b266ffb68fe20fe465aa7d576b5bb345a20/Presentation%20Slides/3.png)
-
-## Presentation
-
-https://docs.google.com/presentation/d/1Wx9slleaZ2d25ukIj9puEj2467auFDcSc8pSU-2hlGI/edit?usp=sharing
 
 
