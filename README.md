@@ -4,7 +4,7 @@
 
 - Author: Ziyan Zhu, Cheyenne Ehman, Yixuan Luo, Zi Yang from CMU MSP class of 2021
 - Advisor: Valerie Ventura from Department of Statistics and Data Science at Carnegie Mellon University
-- Collaborator: PHIGHT COVID Team, Lakdawala Lab at [University of Pittsburgh](https://lakdawalalab.com/)
+- Collaborator: PHIGHT COVID Team, [Lakdawala Lab](https://lakdawalalab.com/) at University of Pittsburgh
 
 ## Presentation
 
