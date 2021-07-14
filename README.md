@@ -15,9 +15,6 @@ Check out our presentation for this project:
 ## Introduction
 
 ### What's the motivation behind exploring how school policies affects COVID transmission?
-- We observed that percent of young people getting infected has peaked around the start of 2020 Fall Semester.
-- We're close to the 2021 Fall, should we reopen or not? 
-- What should we do next time if another pandenmic hits?
 
 ![Why schools](https://github.com/alexazhu/36726-PIGHT-COVID/blob/cdae234f25759a6ec7d711e9b3a9881be81d02b5/Presentation%20Slides/2.png)
 
