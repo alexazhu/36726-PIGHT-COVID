@@ -10,7 +10,7 @@ library(readxl)
 
 ################## Ohio CASES & DEATHS data ######################
 # read in OHIO_CASES_DATA
-cases <- read_excel("RawData/COVID_CASES_OH_CNTY_20210223_pop.xlsx")
+cases <- read_excel("Data/RawData/COVID_CASES_OH_CNTY_20210223_pop.xlsx")
 
 # convert dates
 cases$DATE <- as.Date(cases$DATE, "%m/%d/%Y")

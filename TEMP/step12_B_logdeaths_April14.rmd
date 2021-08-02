@@ -18,7 +18,7 @@ The mobility date has been shifted one week forward as well. Assuming mobility a
 # Load in the spline slopes
 
 ```{r message=FALSE, warning=FALSE, cache=TRUE}
-source("step2_data_wrangle.r")
+source("../Data_processor/007_B_slopes_processor.R")
 
 # Aggregate counties by teaching method
 

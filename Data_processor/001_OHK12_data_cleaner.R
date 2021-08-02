@@ -25,7 +25,7 @@ library(visdat)
 library(readxl)
 
 ## Raw data
-oh_k12 <- read_excel("RawData/OH_K12.xlsx")
+oh_k12 <- read_excel("Data/RawData/OH_K12.xlsx")
 
 # Rename the columns with lower cases for easier reference
 colnames(oh_k12) <- tolower(colnames(oh_k12))
