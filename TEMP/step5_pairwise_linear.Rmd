@@ -1,0 +1,211 @@
+---
+title: "Pairwise analysis on bracket"
+author: "PHIGHT COVID"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+# Get Wrangled data
+
+```{r, message = FALSE, warning=FALSE}
+source('step3_bracket_data.R')
+bracket_county_policy_wide$major_teaching <- as.factor(bracket_county_policy_wide$major_teaching)
+```
+
+
+# One Way ANOVA on Teaching Method
+```{r}
+tm_deathprop.aov <- aov(death_prop ~ major_teaching,data = county_policy_wide)
+summary(tm_deathprop.aov)
+
+tm_bracket_deathprop.aov <- aov(deaths_increase_prop ~major_teaching,data = bracket_county_policy_wide)
+
+summary(tm_bracket_deathprop.aov)
+
+
+tm_bracket_caseprop.aov <-  aov(cases_increase_prop ~major_teaching,data = bracket_county_policy_wide)
+summary(tm_bracket_caseprop.aov )
+```
+
+# Pairwise mean comparison on bracket data
+
+Because the ANOVA test shows insignificance between teaching methods in ALL DATA. We only perform pairwise tests on bracket data.
+
+## Deaths
+
+The differences between "Online Only - On Premises" and "Other - On Premises" are slightly significant in the duncan test. In the Dunnett test, the "Online Only - On Premises" difference is also slightly significant. 
+
+```{r}
+#library(PMCMRplus)
+#library(DescTools)
+ 
+#PostHocTest((tm_deathprop_s.aov), method = "duncan")
+
+#PostHocTest((tm_deathprop_s.aov), method = "scheffe")
+
+#DunnettTest(county_data$death_prop_s, county_data$teachingmethod, control = "Online Only")
+```
+
+
+# One Way Anova Against Online Only
+
+```{r}
+long_isonline$is_online <- as.factor(long_isonline$is_online)
+
+tm_deathprop.aov <- aov(death_prop ~ is_online,data = long_isonline)
+summary(tm_deathprop.aov)
+
+isonline_fit <- lm(death_prop~is_online,long_isonline)
+summary(isonline_fit)
+```
+
+
+```{r}
+long_notonline_mask <- long_isonline_mask%>%
+  filter(is_online=='Not Online Only')
+
+summary(aov(death_prop ~ (prop_student_mask>0.8),data = long_notonline_mask))
+
+summary( aov(death_prop ~ (prop_student_mask>0.98),data = long_notonline_mask))
+
+
+```
+
+
+
+```{r}
+long_bracket_notonline_mask <- long_bracket_isonline_mask%>%
+  filter(is_online=='Not Online Only')
+
+summary(aov(deaths_increase_prop ~ (prop_student_mask>0.8),data = long_bracket_notonline_mask))
+
+summary( aov(deaths_increase_prop ~ (prop_student_mask>0.94),data = long_bracket_notonline_mask))
+
+```
+
+
+```{r}
+
+long_teaching_mask%>%
+  group_by(teachingmethod)%>%
+  summarise(sample_size = n())
+
+
+hybrid_cutoff <- function(cutoff){
+  aovs <- summary(aov(death_prop ~ (prop_student_mask>cutoff),data = long_teaching_mask%>%filter(teachingmethod=='Hybrid')))
+ pval <- aovs[[1]]$`Pr(>F)`[1]
+ return(pval)
+}
+
+pvals_hybrid <- unlist(lapply(seq(0.4,0.99,by=0.01), hybrid_cutoff))
+
+data.frame(cutoffs=seq(0.4,0.99,by=0.01),pvals_hybrid)%>%
+ggplot(aes(x = cutoffs,y = pvals_hybrid))+geom_point(size = 3,color='salmon3')+theme_minimal()+geom_abline(intercept = 0.05,slope = 0)+labs(x = 'Cutoff for Proportion of student wearing mask',y = 'P-value for On Hybrid')+theme(title=element_text(size=15))
+
+
+
+premise_cutoff <- function(cutoff){
+  aovs <- summary(aov(death_prop ~ (prop_student_mask>cutoff),data = long_teaching_mask%>%filter(teachingmethod=='On Premises')))
+ pval <- aovs[[1]]$`Pr(>F)`[1]
+ return(pval)
+}
+
+pvals_premise <- unlist(lapply(seq(0.4,0.99,by=0.01), premise_cutoff))
+
+data.frame(cutoffs=seq(0.4,0.99,by=0.01),pvals_premise)%>%
+ggplot(aes(x = cutoffs,y = pvals_premise))+geom_point(size = 3,color='salmon3')+geom_abline(intercept = 0.05,slope = 0)+labs(x = 'Cutoff for Proportion of student wearing mask',y = 'P-value for On Premises')+theme_minimal()+theme(title=element_text(size=15))
+
+
+#summary( aov(death_prop ~ (prop_student_mask>0.5),data = long_teaching_mask%>%filter(teachingmethod=='Online Only')))
+```
+```{r}
+
+hybrid_cutoff <- function(cutoff){
+aovs <- summary( aov(deaths_increase_prop ~ (prop_student_mask>cutoff),data = long_bracket_teaching_mask%>%filter(teachingmethod=='Hybrid')))
+ pval <- aovs[[1]]$`Pr(>F)`[1]
+ return(pval)
+}
+
+pvals_hybrid <- unlist(lapply(seq(0.4,0.99,by=0.01), hybrid_cutoff))
+
+data.frame(cutoffs=seq(0.4,0.99,by=0.01),pvals_hybrid)%>%
+ggplot(aes(x = cutoffs,y = pvals_hybrid))+geom_point(size = 3,color='salmon3')+theme_minimal()+geom_abline(intercept = 0.05,slope = 0)+labs(x = 'Cutoff for Proportion of student wearing mask',y = 'P-value for On Hybrid')+theme(title=element_text(size=15))
+
+
+premise_cutoff <- function(cutoff){
+  aovs <- summary(aov(deaths_increase_prop ~ (prop_student_mask>cutoff),data = long_bracket_teaching_mask%>%filter(teachingmethod=='On Premises')))
+ pval <- aovs[[1]]$`Pr(>F)`[1]
+ return(pval)
+}
+
+pvals_premise <- unlist(lapply(seq(0.4,0.99,by=0.01), premise_cutoff))
+
+data.frame(cutoffs=seq(0.4,0.99,by=0.01),pvals_premise)%>%
+ggplot(aes(x = cutoffs,y = pvals_premise))+geom_point(size = 3,color='salmon3')+geom_abline(intercept = 0.05,slope = 0)+labs(x = 'Cutoff for Proportion of student wearing mask',y = 'P-value for On Premises')+theme_minimal()+theme(title=element_text(size=15))
+
+seq(0.4,0.99,by=0.01)[which(pvals_premise<0.05)]
+```
+
+# Linear Regression Attempts
+
+
+```{r}
+
+library(corrplot)
+
+county_policy_wide%>%
+  select(On_Premises,Online_Only)%>%
+  drop_na()%>%
+  cor()
+
+
+
+
+
+plot(x= county_policy_wide$Online_Only,y=county_policy_wide$death_prop,col=as.factor(county_policy_wide$major_teaching))
+
+cor(county_policy_wide$On_Premises,county_policy_wide$Online_Only,na.rm=TRUE)
+
+summary(lm(log(death_prop)~On_Premises,data = county_policy_wide))
+
+summary(lm(log(death_prop)~Online_Only,data = county_policy_wide))
+
+teaching_fit <- lm(log(death_prop)~deathBefore+Online_Only+On_Premises,data = county_policy_wide)
+summary(teaching_fit)
+
+
+
+```
+
+```{r}
+teaching_fit <- lm(log(death_prop)~Hybrid+Online_Only+On_Premises,data = county_policy_wide)
+summary(teaching_fit)
+```
+
+
+
+```{r}
+mask_fit <- lm(log(death_prop)~Hybrid*Required_for_all_students+Online_Only*Required_for_all_students+On_Premises*Required_for_all_students,data = county_policy_wide)
+summary(mask_fit)
+```
+
+```{r}
+wide_teaching_enroll%>%
+  filter(On_Premises>0.6)%>%
+  select(county,On_Premises,county_enroll)%>%
+  right_join(cases,by=c('county'='COUNTY'))%>%
+  right_join(OH_K12%>%select(county,opendategrouped),by='county')%>%
+  group_by(DATE)%>%
+  summarise(AVG_CUMDEATHS = mean(CUMDEATHS,na.rm = T))%>%
+  ggplot(aes(x=DATE,y=AVG_CUMDEATHS))+geom_point()
+  
+```
+
+
