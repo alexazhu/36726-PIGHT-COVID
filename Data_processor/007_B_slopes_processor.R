@@ -2,12 +2,12 @@
 ## and combine it with Ohio county profile data from CDC
 ## Author:  Ziyan Zhu, Cheyenne Ehman ## Updated on 08/01/2021
 
-source("Data_processor/table_combiner.R")
+source("Data_processor/005_GetAll_table_combiner.R")
 
 ß############ B(t) shift to B(t-24) ###########
 
 # splines and slopes added
-cases_slope <- read.csv("Cleaned_Data/county_splines.csv", header = T)%>%
+cases_slope <- read.csv("Cleaned_Data/county_splines_slopes_B.csv", header = T)%>%
   select(COUNTY,DATE,POPULATION,CUMDEATHS,log_tot_deaths,tot.slope,NEWDEATHS,rev_NEWDEATHS,log_new_deaths,new.slope)
 
 # SHIFT THE DATE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
