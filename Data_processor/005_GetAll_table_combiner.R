@@ -4,9 +4,9 @@
 
 
 ### loading processor
-source("Data_processor/002_OHK12_data_processor.R")
-source("Data_processor/003_mobility_collecter.R")
-source("Data_processor/004_Ohio_case_profile_data_processor.R")
+source("../Data_processor/002_OHK12_data_processor.R")
+source("../Data_processor/003_mobility_collecter.R")
+source("../Data_processor/004_Ohio_case_profile_data_processor.R")
 
 
 ################# County-level mobility & case data ################
