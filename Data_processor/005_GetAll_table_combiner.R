@@ -2,12 +2,10 @@
 ## and combine it with Ohio county profile data from CDC
 ## Author: Ziyan Zhu ## Updated on 08/01/2021
 
-
 ### loading processor
 source("Data_processor/002_OHK12_data_processor.R")
 source("Data_processor/003_mobility_collecter.R")
 source("Data_processor/004_Ohio_case_profile_data_processor.R")
-
 
 ################# County-level mobility & case data ################
 ## calculate death per 1000 people

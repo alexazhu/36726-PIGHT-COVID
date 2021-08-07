@@ -20,7 +20,7 @@
 
 ## load libraries
 library(tidyverse)
-library(mice)
+library(mice) #for missing value visualization
 library(visdat)
 library(readxl)
 
