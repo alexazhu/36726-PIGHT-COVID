@@ -56,9 +56,9 @@ cases <- cases%>%
 # two counties have negative new deaths at the beginning
 
 
-
 ################### Ohio profile data from CDC website ###################
-ohio_profile <- read.csv("../Data/RawData/county_level_latest_data_for_ohio.csv")
+
+ohio_profile <- read.csv("Data/RawData/county_level_latest_data_for_ohio.csv")
 ohio_profile <- ohio_profile[,c(1,14:20,38:50)]
 ohio_profile$County <- toupper(ohio_profile$County)
 

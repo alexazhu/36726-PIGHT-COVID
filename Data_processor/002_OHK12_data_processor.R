@@ -10,10 +10,8 @@ library(reshape2)
 
 ########################### OH_K12 #############################
 # read in OH_K12 data
-OH_K12 <- read.csv("../Data/Cleaned_Data/OH_K12_clean.csv")
-OH_K12$opendategrouped <- as.Date(OH_K12$opendategrouped)
-OH_K12$date <- as.Date(OH_K12$date)
-
+OH_K12 <- read.csv("Data/Cleaned_Data/OH_K12_clean.csv")
+OH_K12$opendategrouped <- as.Date(OH_K12$opendategrouped)#reopen date cleaned by Annika Avery 
 # total number of students enrolled in Ohio State
 OH_K12 <- OH_K12%>%
   left_join(OH_K12%>%
