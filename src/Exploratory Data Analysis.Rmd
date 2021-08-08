@@ -1,0 +1,44 @@
+---
+title: "Exploratory Data Analysis"
+author: "Ziyan Zhu, Cheyenne Ehman, Yixuan Luo, Zi Yang"
+date: "8/6/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,cache=TRUE,warning=FALSE,error = FALSE,message = FALSE)
+```
+
+# Appendix 1: Motivations
+
+```{r,warning=FALSE,message=FALSE, cache=TRUE}
+## Set up aesthetic theme for all graphs generated in the report
+Sys.setlocale("LC_TIME", "English")
+library(ggrepel)
+library(tidyverse)
+library(lubridate)
+require(scales)
+library(readxl)
+library(ggpubr)
+library(PMCMRplus)
+require(DescTools)
+library(cowplot)
+library(sp)
+# color blind friendly Palette
+library(ggthemes)
+col_theme <- c("Hybrid"="#009E73","On Premises"="#D55E00","Online Only"="#0072B2")
+## plot theme
+grid_theme <- theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    legend.key = element_blank(),
+    panel.background = element_blank(),
+    legend.box="vertical", legend.margin=margin())
+team_theme <- grid_theme+
+  theme(legend.text = element_text(size=14),
+        legend.title = element_text(size=14),
+        axis.text = element_text(size=20),
+        title=element_text(size=20),
+        strip.text.x = element_text(size = 20, face = "bold.italic"))
+```

@@ -10,7 +10,7 @@ library(reshape2)
 
 ################### OH_K12 ###################
 # read in OH_K12 data
-OH_K12 <- read.csv("Cleaned_Data/OH_K12_clean.csv")
+OH_K12 <- read.csv("Data/Cleaned_Data/OH_K12_clean.csv")
 OH_K12$opendategrouped <- as.Date(OH_K12$opendategrouped)
 
 # compute number/percent of enrolled students in each school district by their adopted teaching posture 
@@ -21,21 +21,21 @@ enroll_by_teaching <- OH_K12 %>%
             prop_teaching = round(sum(district_enroll/county_enroll),2),.groups = "drop")
 
 # reshape the data frame to wide
-enroll_by_teaching_wide <- enroll_by_teaching%>%
+wide_teaching_enroll <- enroll_by_teaching%>%
   dcast(county + county_enroll~teachingmethod,value.var ='prop_teaching')%>%
   replace(is.na(.),0)
   
 # drop school districts whose teaching posture are UNKNOWN & PENDING & OTHER
-enroll_by_teaching_wide <- enroll_by_teaching_wide%>%
+wide_teaching_enroll <-  wide_teaching_enroll%>%
   select(-Unknown,-Other,-Pending)
 
 # then find the teaching posture adopted by the majority of school districts in each county
 # create a new column named 'major_teaching'
-enroll_by_teaching_wide[,'major_teaching'] <- apply(enroll_by_teaching_wide[,3:5], 
+wide_teaching_enroll[,'major_teaching'] <- apply( wide_teaching_enroll[,3:5], 
                                                     1, function(x){names(which.max(x))})
   
 # replace spaces in columns names with '_'
-colnames(enroll_by_teaching_wide) <- gsub(' ','_',colnames(enroll_by_teaching_wide))
+colnames( wide_teaching_enroll) <- gsub(' ','_',colnames( wide_teaching_enroll))
 
 # made major teaching method prop
 wide_teaching_enroll <- wide_teaching_enroll%>%
@@ -147,12 +147,12 @@ major_reopening <- county_open_teaching_enroll%>%
 ################## OH CASES ######################
 
 ##########
-ohio_profile <- read.csv("county_level_latest_data_for_ohio.csv")
+ohio_profile <- read.csv("Data/RawData/county_level_latest_data_for_ohio.csv")
 ohio_profile <- ohio_profile[,c(1,14:20,38:50)]
 ohio_profile$County <- toupper(ohio_profile$County)
 
 # read in OHIO_CASES_DATA
-cases <- read_excel("COVID_CASES_OH_CNTY_20210223_pop.xlsx")
+cases <- read_excel("Data/RawData/COVID_CASES_OH_CNTY_20210223_pop.xlsx")
 # convert dates
 cases$DATE <- as.Date(cases$DATE, "%m/%d/%Y")
 # remove UNASSIGNED and OUT OF OH data
@@ -268,7 +268,7 @@ long_studentmask <- studentmask_enroll%>%
 long_staff <- staffmask_enroll%>%
   left_join(death_prop,by = c("county"= "COUNTY"))
 
-isonline_enroll <- teachingmethod_enroll%>%
+isonline_enroll <- enroll_by_teaching%>%
   filter(teachingmethod != 'Other'&teachingmethod != 'Pending'&teachingmethod != 'Unknown')%>%
   mutate(is_online = ifelse(teachingmethod == "Online Only","Online Only","Not Online Only"))%>%
   group_by(county,is_online) %>%
@@ -305,7 +305,7 @@ newdeaths <- cases%>%
   mutate(DATE = as.character(DATE))%>%
   dcast(COUNTY~DATE,value.var = "NEWDEATHS")
 
-write.csv(newdeaths,"newdeaths_ohio.csv",row.names = F)
+#write.csv(newdeaths,"newdeaths_ohio.csv",row.names = F)
 
 cumdeaths <- cases%>%
   select(COUNTY,CUMDEATHS,DATE)%>%
@@ -313,14 +313,14 @@ cumdeaths <- cases%>%
   mutate(DATE = as.character(DATE))%>%
   dcast(COUNTY~DATE,value.var = "CUMDEATHS")
 
-write.csv(cumdeaths,"cumdeaths_ohio.csv",row.names = F)
+#write.csv(cumdeaths,"cumdeaths_ohio.csv",row.names = F)
 
 sixhrs_away <- case_mobility%>%
   select(COUNTY,DATE,full_work_prop_7d)%>%
   mutate(DATE = as.character(DATE))%>%
   dcast(COUNTY~DATE,value.var = "full_work_prop_7d")
 
-write.csv(sixhrs_away,"sixhrs_away.csv",row.names = F)
+#write.csv(sixhrs_away,"sixhrs_away.csv",row.names = F)
 
 death_teaching <-  cases%>%
   full_join(wide_teaching_enroll, by = c("COUNTY"="county"))%>%
@@ -330,13 +330,13 @@ death_teaching <- death_teaching%>%
   left_join(ohio_profile%>%distinct(County,Metropolitan.Status,NCHS.Urban.Rural.Status,Population.density),by=c("COUNTY"="County"))%>%
   left_join(major_reopening,by=c("COUNTY"))
 
-write.csv(death_teaching,"deaths_teaching.csv",row.names = F)
+#write.csv(death_teaching,"deaths_teaching.csv",row.names = F)
 
 
 ######## B(t) manipulation
 
 # splines and slopes added
-cases_slope <- read.csv("county_splines.csv", header = T)%>%
+cases_slope <- read.csv("Data/Cleaned_Data/county_splines_slopes.csv", header = T)%>%
   select(COUNTY,DATE,POPULATION,CUMDEATHS,log_tot_deaths,tot.slope,NEWDEATHS,rev_NEWDEATHS,log_new_deaths,new.slope)
 
 # SHIFT THE DATE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -349,7 +349,7 @@ cases_slope_teach <-death_teaching%>%
   right_join(cases_slope,by=c("COUNTY"))%>%
   filter(DATE>as.Date("2020-01-23"))
 
-write.csv(cases_slope_teach,"cases_slope_teach.csv",row.names = F)
+#write.csv(cases_slope_teach,"cases_slope_teach.csv",row.names = F)
 
 ## ordering the teaching method factor to ensure the color order
 

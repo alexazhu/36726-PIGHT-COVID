@@ -25,7 +25,7 @@ library(PMCMRplus)
 require(DescTools)
 library(cowplot)
 library(sp)
-source("step2_data_wrangle.R")
+#source("step2_data_wrangle.R")
 # color blind friendly Palette
 library(ggthemes)
 col_theme <- c("Hybrid"="#009E73","On Premises"="#D55E00","Online Only"="#0072B2")
