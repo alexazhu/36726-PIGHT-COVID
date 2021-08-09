@@ -1,0 +1,168 @@
+---
+title: "Interpretation"
+author: "PHIGHT COVID"
+date: "3/23/2021"
+output: pdf_document
+---
+
+#Get Wranggling Data
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(rstatix)
+library(ggpubr)
+
+bracket_county_policy_aggregate_wide <- read.csv("~/Desktop/PHIGHT/03:24/bracket_county_policy_aggregate_wide.csv")
+bracket_county_policy_aggregate_wide$major_teaching <- as.factor(bracket_county_policy_aggregate_wide $major_teaching)
+
+#we might want per 100,000 people? county pop 10k ~ 1000k
+bracket_county_policy_aggregate_wide <- bracket_county_policy_aggregate_wide %>%
+  mutate(deaths_increase_per_100k = 100*deaths_increase_per_1000)
+```
+
+
+# 1-Way ANOVA on Teaching Method (deaths)
+```{r}
+tm_bracket_deathprop.aov <- aov(deaths_increase_per_100k ~major_teaching,data = bracket_county_policy_aggregate_wide)
+
+summary(tm_bracket_deathprop.aov)
+tm_bracket_deathprop.aov$coefficients
+```
+
+We have an ANOVA that has detected a significant effect of the factor, which in this case is teaching method. We know this because the p-value < 0.05.
+
+# 1-Way ANOVA on Teaching Method (cases)
+```{r}
+tm_bracket_caseprop.aov <-  aov(cases_increase_per_1000 ~major_teaching,data = bracket_county_policy_aggregate_wide)
+
+summary(tm_bracket_caseprop.aov)
+tm_bracket_caseprop.aov$coefficients
+```
+
+We have an ANOVA that has detected a significant effect of the factor, which in this case is teaching method. We know this because the p-value < 0.1. However, the ANOVA fails to detect the significance on the 0.05 level. 
+
+
+We therefore conclude that teaching method is an important factor that has a real impact on the transmission of COVID. The impact, is more obvious reflected by deaths increase than cases increase. 
+
+
+# Multiple Comparison (deaths)
+
+We conduct statistical tests to help us understand the group difference using multiple comparisons. 
+
+
+# Pairwise T-tests for multiple groups
+```{r}
+res.aov <- bracket_county_policy_aggregate_wide %>% anova_test(deaths_increase_per_100k ~major_teaching)
+# Pairwise comparisons
+pwc <- bracket_county_policy_aggregate_wide %>%
+  pairwise_t_test(deaths_increase_per_100k ~major_teaching, p.adjust.method = "bonferroni")
+pwc
+```
+
+```{r}
+# Show adjusted p-values
+pwc <- pwc %>% add_xy_position(x = "major_teaching")
+ggboxplot(bracket_county_policy_aggregate_wide, x = "major_teaching", y = "deaths_increase_per_100k") +
+  stat_pvalue_manual(pwc, label = "p.adj", tip.length = 0, step.increase = 0.1) +
+  labs(
+    subtitle = get_test_label(res.aov, detailed = TRUE),
+    caption = get_pwc_label(pwc)
+    )
+```
+
+```{r}
+# Show significance levels
+# Hide non-significant tests
+ggboxplot(bracket_county_policy_aggregate_wide, x = "major_teaching", y = "deaths_increase_per_100k") +
+  stat_pvalue_manual(pwc, hide.ns = TRUE, label = "p.adj.signif") +
+  labs(
+    subtitle = get_test_label(res.aov, detailed = TRUE),
+    caption = get_pwc_label(pwc)
+    )
+```
+
+
+* Tukey
+
+The Tukey HSD procedure will run a pairwise comparison of all possible combinations of groups and test these pairs for significant differences between their means
+
+```{r}
+(tuk <- TukeyHSD(tm_bracket_deathprop.aov))
+plot(tuk)
+```
+
+Significant: 
+On Premises - Hybrid
+On Premises - Online Only
+
+
+Explanation:
+There is no significant difference in deaths increase between Hybrid and Online Only
+
+THERE IS A SIGNIFICANT DIFFERENCE in deaths increase between On Premises and Hybrid, On Premises and Online Only
+
+
+Interpretation:
+diff: mean (?should we increase to 100k)
+
+If we switch from in person teaching to hybrid, we potentially save 32 lives per 100k people.
+If we switch from in person teaching to online, we potentially save 47 lives per 100k people.
+
+The CI looks big, should we say we can save up to 60 / 85 lives??
+
+Another way to do this on a state level(%):
+
+```{r}
+tm_bracket_deathprop.aov1 <- aov(deaths_increase_prop ~major_teaching,data = bracket_county_policy_aggregate_wide)
+
+summary(tm_bracket_deathprop.aov1)
+
+(tuk1 <- TukeyHSD(tm_bracket_deathprop.aov1))
+plot(tuk1)
+```
+
+```{r}
+#state population
+(p <- sum(bracket_county_policy_aggregate_wide$POPULATION))
+
+#calculate how many lives saved
+0.0003152*p
+0.0004732*p
+
+#current total deaths increase
+(d <- sum(bracket_county_policy_aggregate_wide$deaths_increase, na.rm = TRUE))
+```
+
+```{r}
+3696/d
+5549/d
+```
+
+
+
+
+
+
+# Other Comparison Tests (tried)
+
+```{r}
+library(DescTools)
+ 
+PostHocTest((tm_bracket_deathprop.aov), method = "duncan")
+
+PostHocTest((tm_bracket_deathprop.aov), method = "scheffe")
+
+DunnettTest(bracket_county_policy_aggregate_wide$deaths_increase_per_100k, bracket_county_policy_aggregate_wide $major_teaching, control = "On Premises")
+```
+
+Results pretty consistent in terms of estimates, p-values differ.
+
+
+# Kruskal-Wallis (no assumptions)
+
+```{r}
+kruskal.test(bracket_county_policy_aggregate_wide$deaths_increase_per_100k, bracket_county_policy_aggregate_wide $major_teaching)
+```
+
+

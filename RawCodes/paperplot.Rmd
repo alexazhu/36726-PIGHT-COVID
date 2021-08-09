@@ -1,0 +1,835 @@
+---
+title: "paper plot"
+author: "Ziyan Zhu"
+date: "5/27/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Setup
+
+```{r}
+## Set up aesthetic theme for all graphs generated in the report
+Sys.setlocale("LC_TIME", "English")
+library(lemon)
+library(ggrepel)
+library(tidyverse)
+library(lubridate)
+require(scales)
+library(readxl)
+library(ggpubr)
+library(PMCMRplus)
+require(DescTools)
+library(cowplot)
+library(sp)
+library(ggplot2)
+library(grid)
+library(gridExtra)
+library(showtext)
+font_import()
+
+# color blind friendly Palette
+library(ggthemes)
+col_theme <- c("Hybrid"="#009E73","On Premises"="#D55E00","Online Only"="#0072B2")
+## plot theme
+grid_theme <- theme(axis.line = element_line(colour = "black"),
+                    panel.grid.major = element_blank(),
+                    panel.grid.minor = element_blank(),
+                    panel.border = element_blank(),
+                    legend.key = element_blank(),
+                    panel.background = element_blank(),
+                    legend.box="vertical", legend.margin=margin())
+team_theme <- grid_theme+
+  theme(legend.text = element_text(size=18,family="Times New Roman"),
+        legend.title = element_text(size=18,family="Times New Roman"),
+        axis.text = element_text(size=20,family="Times New Roman"),
+        title=element_text(size=20,family="Times New Roman"),
+        strip.background =element_rect(fill="white"),
+        strip.text.x = element_text(size = 20,family="Times New Roman"))
+
+map_theme <-   theme(legend.position = "right",
+                     legend.text = element_text(size=18,family="Times New Roman"),
+                     legend.title = element_text(size=18,family="Times New Roman"),
+                     legend.key = element_rect(size = 3),
+                     legend.key.height = unit(1, "cm"),
+                     legend.key.width = unit(1, "cm"))
+```
+
+```{r}
+source("step2_data_wrangle.R")
+```
+
+## Figure 1
+
+### A
+```{r Map of proportion of students taking online-only classes}
+ohio_map <- map_data("county") %>%subset(region=="ohio")%>%
+  mutate(county=toupper(subregion))%>%select(long,lat,county,group)
+
+# Map of proportion of students taking online-only classes
+online_map <- wide_teaching_enroll%>%
+  left_join(ohio_map,by='county')%>%
+  mutate(Online_Only= Online_Only*100)%>%
+  ggplot() + 
+  geom_polygon(aes(x = long, y = lat, group = group, fill = Online_Only), color = "gray") + 
+  coord_fixed(1.3) + theme_map() +
+  scale_fill_distiller(palette = "Blues",direction = 1)+
+  labs(fill='% Online-only \nStudents')+map_theme
+```
+
+### B
+
+```{r Map of proportion of students taking on-premises classes}
+# Map of proportion of students taking on-premises classes
+onpremise_map <- wide_teaching_enroll%>%
+  left_join(ohio_map,by='county')%>%
+  mutate(On_Premises= On_Premises*100)%>%
+  ggplot() + 
+  geom_polygon(aes(x = long, y = lat, group = group, fill = On_Premises), color = "gray") + 
+  coord_fixed(1.3) + theme_map() +
+  scale_fill_distiller(palette = "OrRd",direction = 1)+
+  labs(fill='% On-premises \nStudents')+map_theme
+```
+
+### C
+```{r Map of proportion of students taking hybrid classes}
+# Map of proportion of students taking hybrid classes
+hybrid_map <- wide_teaching_enroll%>%
+  left_join(ohio_map,by='county')%>%
+  mutate(Hybrid= Hybrid*100)%>%
+  ggplot() + 
+  geom_polygon(aes(x = long, y = lat, group = group, fill = Hybrid), color = "gray") + 
+  coord_fixed(1.3) + 
+  theme_map() +
+  scale_fill_distiller(palette = "Greens",direction = 1)+
+  labs(fill='% Hybrid \nStudents')+map_theme
+```
+
+### D
+```{r major teaching map}
+# major teaching map
+teach_map <- wide_teaching_enroll%>%
+  left_join(ohio_map,by='county')%>%
+  mutate(On_Premises= On_Premises*100)%>%
+  ggplot() + geom_polygon(aes(x = long, y = lat, group = group, fill = as.factor(major_teaching)), color = "white",alpha=0.9) + 
+  coord_fixed(1.3) + theme_map() + 
+  scale_fill_manual(values=col_theme)+ 
+  labs(fill='Majority teaching\nposture')+map_theme
+
+```
+
+
+### All
+```{r}
+pic12 <- arrangeGrob(online_map, 
+                     top = textGrob("B.", x = unit(0, "npc")
+                                    , y   = unit(1, "npc"), just=c("left","top"),
+                                    gp=gpar(fontface="bold",col="black", fontsize=22, fontfamily="Times Roman")))
+
+pic11 <- arrangeGrob(onpremise_map, 
+                     top = textGrob("A.", x = unit(0, "npc")
+                                    , y = unit(1, "npc"), just=c("left","top"),
+                                    gp=gpar(fontface="bold",col="black", fontsize=22, fontfamily="Times Roman")))
+
+pic13 <- arrangeGrob(hybrid_map, 
+                     top = textGrob("C.", x = unit(0, "npc")
+                                    , y  = unit(1, "npc"), just=c("left","top"),
+                                    gp=gpar(fontface="bold",col="black", fontsize=22, fontfamily="Times Roman")))
+
+pic14 <- arrangeGrob(teach_map, 
+                     top = textGrob("D.", x = unit(0, "npc")
+                                    , y = unit(1, "npc"), just=c("left","top"),
+                                    gp=gpar(fontface="bold",col="black", fontsize=22, fontfamily="Times Roman")))
+
+## graph 1
+fig1 <- grid.arrange(pic11, pic12, pic13, pic14, ncol = 2)
+
+ggsave("Figure1.png",fig1,height = 7,width = 13)
+```
+
+
+## Fig 2
+
+### A
+```{r}
+# see when the intesection happens
+date.intercept <- as.Date("2020-11-24")
+# add 95% confidence bans
+confidence_level <- .95
+z_cl <- qnorm(confidence_level)
+### death plots
+death_plot <- case_policy_wide%>%
+  group_by(DATE, major_teaching) %>%
+  drop_na(major_teaching)%>%
+  summarise(total_deaths = sum(CUMDEATHS),
+            total_pop = sum(POPULATION),
+            death_prop = total_deaths/total_pop,
+            death_prop_upper = death_prop + z_cl*sqrt(death_prop*(1 - death_prop)/total_pop),
+            death_prop_lower = death_prop - z_cl*sqrt(death_prop*(1 - death_prop)/total_pop),
+            .groups = "drop") %>%
+  ggplot(aes(x = DATE, y = death_prop*1000, group = major_teaching))+
+  geom_rect(data=case_policy_wide[1,],
+            aes(xmin=as.Date("2020/08/18"), xmax=as.Date("2020/12/15"),
+                ymin=-Inf,ymax=Inf),
+            color = NA,alpha=0.2, show.legend = F, fill = "#E69F00") + 
+  geom_line(aes(color = major_teaching),size = 1, alpha = .8) + 
+  geom_ribbon(aes(ymin = 1000*death_prop_lower, ymax = 1000*death_prop_upper,
+                  fill= major_teaching), 
+              alpha = .3, show.legend = F)+ 
+  geom_vline(xintercept = date.intercept, linetype = "dashed") + 
+  annotate("text",x = date.intercept,y = 1.5,
+           label = date.intercept,
+           hjust = 1.1) + 
+  team_theme + 
+  #ggtitle("Death Incidences Increase Faster for Red Counties ")+
+  labs(x = "Date", y = "Death Incidence / 1,000 people",
+       color = "Majority teaching posture"
+       #caption = "Yellow area represents fall semester (09/18/20 - 12/15/20)"
+  )+
+  scale_colour_manual(values=col_theme)+scale_fill_manual(values=col_theme)
+
+```
+
+### B
+```{r B plots}
+### B plots
+cases_slope_teach_agg <- cases_slope_teach %>%
+  drop_na(major_teaching)%>%
+  group_by(DATE, major_teaching) %>%
+  summarise(total_new_deaths = sum(rev_NEWDEATHS), .groups = "drop") %>%
+  mutate(log_new_deaths = log(total_new_deaths + 1)) %>%
+  group_by(major_teaching) %>%
+  mutate(smooth.spline = smooth.spline(DATE,log_new_deaths,df = 398/28)$y,
+         B = predict(smooth.spline(DATE,log_new_deaths,df = 398/28),deriv = 1)$y,B2 = predict(smooth.spline(DATE,log_new_deaths,df = 398/28),deriv = 2)$y)
+
+week3_after_start <- as.Date("2020/08/18") + 21
+
+####
+b_plot <- ggplot(cases_slope_teach_agg, aes(x = DATE, color = major_teaching)) + 
+  geom_line(aes(y = B), size = 1) +
+  geom_rect(data = cases_slope_teach_agg[1,],
+            aes(xmin=as.Date("2020/08/18"), xmax=as.Date("2020/12/15"),
+                ymin=-Inf,ymax=Inf),
+            color = NA,alpha=0.2, show.legend = F, fill = "#E69F00") +
+  geom_hline(yintercept = 0, lty = 2) + 
+  geom_vline(xintercept = week3_after_start, lty = 2) + 
+  annotate("text",label = "3 Weeks After",
+           x = week3_after_start, y = .05, hjust = 1.1)+ 
+  geom_vline(xintercept = as.Date("2020/08/18")+42, lty = 2) + 
+  annotate("text",label = "6 Weeks After",
+           x = as.Date("2020/08/18")+130, y = .06, hjust = 1.3)+ 
+  labs(x = "Date", y = "Exponential Growth Coefficient" 
+       #color = "Majority teaching posture",
+       #caption = "Yellow area represents fall semester (09/18/20 - 12/15/20)\nSmoothing window set to every 4 weeks"
+  ) +team_theme+scale_color_manual(values=col_theme)
+```
+
+### C
+```{r}
+## Duncan test after significant ANOVA test
+stat.test <- PostHocTest(fall_major_teaching.aov, method = "duncan")$major_teaching%>%
+  as.data.frame()%>%
+  rownames_to_column("group") %>%
+  separate(group,"-", into = c("group1","group2")) %>%
+  mutate(pval = round(pval,3),
+         p = case_when(pval <= .01~ "**",
+                       pval <= .05 ~ "*",
+                       TRUE ~ "NS"))%>%
+  select(group1, group2, pval, p)
+
+# Box Plots with test statistics
+death_box <- ggplot(fall_cases,aes(y = death_incidence_per_1000, x = major_teaching)) + 
+  geom_boxplot(aes(fill = major_teaching),width=0.6)+
+  stat_compare_means(method = "anova",size=6,geom="text",vjust=0.5,hjust=-0.2)+ 
+  stat_pvalue_manual(stat.test, label = "p",y.position = 2, step.increase = 0.2,size=6)+
+  ylim(c(0,3.5))+ 
+  labs(y = "Death Incidence / 1,000 people",x = "Majority Teaching Posture")+
+  #fill = "Majority teaching posture",
+  #title = "Death Incidence in the Fall Semester",
+  #subtitle = "Deaths (08/18/20 - 12/15/20)",
+  #caption = "Pairwise p-values come from Duncan pairwise comparison test\nSignificance codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘NS’ 1") +
+  theme(legend.position = "hidden")+team_theme+ 
+  scale_colour_manual(values=col_theme)+scale_fill_manual(values=col_theme)
+#############
+```
+
+### D
+```{r}
+# one-way ANOVA
+max_B.aov <- aov(max_B1~ major_teaching,data = B0B1)
+
+summary(max_B.aov)
+
+# Duncan test: p-value of .012
+stat.test <- PostHocTest(max_B.aov, method = "duncan")$major_teaching %>%
+  as.data.frame()%>%
+  rownames_to_column("group") %>%
+  separate(group,"-", into = c("group1","group2")) %>%
+  mutate(pval = round(pval,3),
+         p = case_when(pval <= .01~ "**",
+                       pval <= .05 ~ "*",
+                       TRUE ~ "NS"))%>%
+  select(group1, group2, pval, p)
+# boxplot
+maxB_box <-na.omit(B0B1)%>%
+  ggplot(aes(x=major_teaching,y=max_B1))+geom_boxplot(aes(fill=major_teaching),width=0.6)+
+  ylim(c(0,0.08))+ 
+  stat_compare_means(method = "anova",size=6,geom="text",vjust=0.5,hjust=-0.2)+ 
+  stat_pvalue_manual(stat.test, label = "p",y.position = 0.04, step.increase = 0.2,size = 6)+
+  labs(title="",x="Majority Teaching Posture",y="Max Growth",fill="Majority teaching posture")+
+  # caption = "Pairwise p-values come from Duncan pairwise comparison test\nSignificance codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘NS’ 1")+
+  team_theme+theme(legend.position = "hidden")+scale_fill_manual(values=col_theme)
+
+```
+
+### All
+```{r}
+pic21 <- arrangeGrob(death_plot+
+                       theme(legend.position = "hidden",
+                             plot.margin=unit(c(1,1,3,1.5),"cm")),
+                     top = textGrob("A.", x = unit(0, "npc")
+                                    , y   = unit(1, "npc"), just=c("left","top"),
+                                    gp=gpar(fontface="bold",col="black", fontsize=22, 
+                                            fontfamily="Times Roman")))
+
+pic22 <- arrangeGrob(b_plot+
+                       theme(legend.position = "hidden",
+                             plot.margin=unit(c(1,1,3,1.5),"cm")),
+                     top = textGrob("B.", x = unit(0, "npc")
+                                    , y = unit(1, "npc"), just=c("left","top"),
+                                    gp=gpar(fontface="bold",col="black", fontsize=22, 
+                                            fontfamily="Times Roman")))
+
+pic23 <- arrangeGrob(death_box+
+                       theme(
+                         plot.margin=unit(c(1,1,1,1.5),"cm")), 
+                     top = textGrob("C.", x = unit(0, "npc")
+                                    , y = unit(1, "npc"), just=c("left","top"),
+                                    gp=gpar(fontface="bold",col="black", fontsize=22, 
+                                            fontfamily="Times Roman")))
+
+pic24 <- arrangeGrob(maxB_box+
+                       theme(
+                         plot.margin=unit(c(1,1,1,1.5),"cm")), 
+                     top = textGrob("D.", x = unit(0, "npc")
+                                    , y = unit(1, "npc"), just=c("left","top"),
+                                    gp=gpar(fontface="bold",col="black", fontsize=22, 
+                                            fontfamily="Times Roman")))
+
+
+
+fig2 <- grid.arrange(pic21,pic22,pic23,pic24,ncol=2)
+
+ggsave("Figure2.png",plot=fig2,width=15,height=10)
+```
+
+## Fig 3
+
+### A
+```{r}
+max_mobi <- na.omit(B0B1)%>%
+  drop_na(major_teaching)%>%
+  ggplot(aes(x=avg_full_work_prob,y=max_B1,group=major_teaching,color=major_teaching))+
+  geom_point(aes(size=log(Population.density),alpha=log(Population.density)))+
+  geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+
+  labs(y="Maximum Growth Coefficient",
+       x="Average %Cell Phones Away Home for 6+hrs",
+       #title="Maximum Growth Coefficient in Fall v.s. Average Mobility \nAll Counties",
+       size = "Log of Population Density",
+       alpha= "Log of Population Density"
+       ,color="Majority teaching posture")+
+  team_theme+theme(legend.position = "bottom")+
+  scale_color_manual(values=col_theme)
+```
+
+### B
+```{r}
+######
+max_pop <- na.omit(B0B1)%>%
+  drop_na(major_teaching)%>%
+  ggplot(aes(x=log(Population.density),y=max_B1,group=major_teaching,color=major_teaching))+
+  geom_point(aes(size=avg_full_work_prob,alpha=avg_full_work_prob))+
+  geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+
+  labs(y="Maximum Growth Coefficient",
+       x="Log of Population Density",
+       #title="Maximum Growth Coefficient in Fall v.s. Log of Population Density \nAll Counties",
+       size = "Mobility in Fall",
+       alpha= "Mobility in Fall",
+       color="Majority Teaching Posture")+
+  team_theme+theme(legend.position = "bottom")+
+  scale_color_manual(values=col_theme)
+
+max_pop
+```
+
+
+### All
+
+```{r}
+pic31 <- arrangeGrob(max_mobi+guides(colour=FALSE)+
+                       theme(
+                         plot.margin=unit(c(1,1,1,1.5),"cm")), 
+                     top = textGrob("A.", x = unit(0, "npc")
+                                    , y = unit(1, "npc"), just=c("left","top"),
+                                    gp=gpar(fontface="bold",col="black", fontsize=22, 
+                                            fontfamily="Times Roman")))
+
+pic32 <- arrangeGrob(max_pop+guides(colour=FALSE)+
+                       theme(
+                         plot.margin=unit(c(1,1,1,1.5),"cm")), 
+                     top = textGrob("B.", x = unit(0, "npc")
+                                    , y = unit(1, "npc"), just=c("left","top"),
+                                    gp=gpar(fontface="bold",col="black", fontsize=22, 
+                                            fontfamily="Times Roman")))
+
+
+
+fig3 <- grid.arrange(pic31,pic32,ncol=2)
+
+ggsave("Figure3.png",plot=fig3,width=13,height=5)
+```
+
+## Fig 4
+
+### A
+```{r}
+# Map of majority teaching posture in Micropolitan counties
+micro_profile <- ohio_profile%>%
+  distinct(County,NCHS.Urban.Rural.Status) %>%
+  left_join(wide_teaching_enroll[,c("county","major_teaching")], 
+            by = c("County" = "county"))%>%
+  mutate(is_micro = factor(ifelse(NCHS.Urban.Rural.Status == "Micropolitan",major_teaching,"Not Micropolitan")))%>%
+  left_join(ohio_map,by=c('County'='county'))
+
+micro_profile$is_micro <- factor(micro_profile$is_micro,levels = c("On Premises","Hybrid","Online Only","Not Micropolitan"))
+
+micro_map <- micro_profile%>%
+  ggplot() + 
+  geom_polygon(aes(x = long, y = lat, group = group, fill = is_micro),
+               color = "gray",alpha=0.9) + 
+  coord_fixed(1.3) + theme_map() +
+  scale_fill_manual(values = c(col_theme, "Not Micro" = "white"))+
+  labs(fill='Majority Teaching Posture')+map_theme+
+  theme(legend.position = "bottom")
+```
+
+### B
+```{r}
+# one-way ANOVA
+maxB_major_teaching.aov <- aov(max_B1 ~ major_teaching,data = na.omit(B0B1)%>%
+  filter(NCHS.Urban.Rural.Status=="Micropolitan"))
+summary(maxB_major_teaching.aov)
+
+
+# Duncan test: p-value of .012
+stat.test <- PostHocTest(maxB_major_teaching.aov, method = "duncan")$major_teaching %>%
+  as.data.frame()%>%
+  rownames_to_column("group") %>%
+  separate(group,"-", into = c("group1","group2")) %>%
+  mutate(pval = round(pval,3),
+         p = case_when(pval <= .01~ "**",
+                       pval <= .05 ~ "*",
+                       TRUE ~ "NS"))%>%
+  select(group1, group2, pval, p)
+
+# boxplot
+micro_max_box <- na.omit(B0B1)%>%
+  filter(NCHS.Urban.Rural.Status=="Micropolitan")%>%
+  drop_na(major_teaching)%>%
+  ggplot(aes(x=major_teaching,y=max_B1))+
+  geom_boxplot(aes(fill=major_teaching))+
+  ylim(c(0,0.04))+
+  stat_compare_means(method = "anova",size=6,label.y.npc=0.96)+ 
+  stat_pvalue_manual(stat.test, label = "p",y.position = 0.03, step.increase = 0.2,size = 6)+
+  team_theme+
+  theme(legend.position = "hidden")+
+  labs(y="Max Growth Coefficient",x="Majority Teaching Posture",
+       #title="Distribution of Maximum Growth Coefficient \nin Micropolitan Counties",
+       fill="Majority teaching posture",
+       caption = "P-value comes from One-way ANOVA test")+
+  scale_fill_manual(values=col_theme)
+```
+
+### All
+
+```{r}
+pic41 <- arrangeGrob(micro_map+ guides(fill = guide_legend(nrow = 2)) +
+                       theme(
+                         plot.margin=unit(c(1,1,1,1.5),"cm")), 
+                     top = textGrob("A.", x = unit(0, "npc")
+                                    , y = unit(1, "npc"), just=c("left","top"),
+                                    gp=gpar(fontface="bold",col="black", fontsize=30, 
+                                            fontfamily="Times Roman")))
+
+pic42 <- arrangeGrob(micro_max_box+
+                       theme(
+                         plot.margin=unit(c(1,1,1,1.5),"cm")), 
+                     top = textGrob("B.", x = unit(0, "npc")
+                                    , y = unit(1, "npc"), just=c("left","top"),
+                                    gp=gpar(fontface="bold",col="black", fontsize=30, 
+                                            fontfamily="Times Roman")))
+
+
+
+fig4 <- grid.arrange(pic41,pic42,ncol=2)
+
+ggsave("Figure4.png",plot=fig4,width=15,height=7)
+```
+
+
+
+## Fig 5
+
+### A
+```{r}
+change1 <- B_diff_micro%>%
+  ggplot(aes(x=log(Population.density),y=new.slope.diff,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg_full_work_prob,alpha=avg_full_work_prob))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+
+  labs(y="Change in Growth",x="Log of Population Density",
+       #title="Change in Growth Right After School Reopen\nOnly Micropolitan Counties",
+       color="Majority Teaching Posture",
+       size = "Mobility in Week0 to Week3",
+       #size = "0w~3w\nAverage %Cell Phones Away Home for 6+hrs",
+       alpha= "Mobility in Week0 to Week3" ,
+       fill="Majority Teaching Posture")+
+  scale_color_manual(values=col_theme)+
+  theme(legend.position = "bottom")+
+  geom_text(data =selected_county,aes(label=COUNTY),color='black',family="Times New Roman",size=6,hjust=0.7, vjust=-0.5)
+
+```
+
+### B
+```{r}
+selected_county <- B_diff_micro%>%filter(COUNTY%in%c("CHAMPAIGN","DEFIANCE","MERCER"))%>%
+  mutate(COUNTY=str_to_title(COUNTY))
+
+change2 <- B_diff_micro%>%
+  ggplot(aes(x=log(Population.density),y=new.slope.diff2,group=major_teaching,color=major_teaching))+geom_point(aes(size=avg2_full_work_prob,alpha=avg2_full_work_prob))+geom_smooth(method = "lm", se=F, formula = y ~ x,alpha=0.1)+theme_minimal()+team_theme+
+  labs(y="Change in Growth",x="Log of Population Density",
+       #title="Change in Growth Three Weeks Later\nOnly Micropolitan Counties",
+       color="Majority Teaching Posture",
+       size = "Mobility in Week3 to Week6",
+       alpha = "Mobility in Week3 to Week6",
+       #size = "3w~6w\nAveraged %6hr+ Away Home",
+       #alpha= "3w~6w\nAveraged %6hr+ Away Home" ,
+       fill="Majority Teaching Posture")+
+  scale_color_manual(values=col_theme)+
+  theme(legend.position = "bottom")+
+  geom_text(data =selected_county,aes(label=COUNTY),color='black',family="Times New Roman",size=6,hjust=0.7, vjust=-0.5)
+```
+
+
+### All
+
+```{r}
+pic51 <- arrangeGrob(change1+guides(colour=FALSE)+
+                       theme(
+                         plot.margin=unit(c(1,1,1,1.5),"cm")), 
+                     top = textGrob("A.", x = unit(0, "npc")
+                                    , y = unit(1, "npc"), just=c("left","top"),
+                                    gp=gpar(fontface="bold",col="black", fontsize=22, 
+                                            fontfamily="Times Roman")))
+
+pic52 <- arrangeGrob(change2+guides(colour=FALSE)+
+                       theme(
+                         plot.margin=unit(c(1,1,1,1.5),"cm")), 
+                     top = textGrob("B.", x = unit(0, "npc")
+                                    , y = unit(1, "npc"), just=c("left","top"),
+                                    gp=gpar(fontface="bold",col="black", fontsize=22, 
+                                            fontfamily="Times Roman")))
+
+
+
+fig5 <- grid.arrange(pic51,pic52,ncol=2)
+
+ggsave("Figure5.png",plot=fig5,width=14,height=6)
+```
+
+## Fig 6
+
+### A
+```{r}
+library(ggpubr)
+library(PMCMRplus)
+require(DescTools)
+# set up data
+teaching_profile <- ohio_profile%>%
+  inner_join(wide_teaching_enroll,by=c("County"="county"))
+teaching_profile$major_teaching <- factor(teaching_profile$major_teaching,levels = c("On Premises","Hybrid","Online Only"))
+
+# one-way ANOVA test
+profile_major_teaching.aov <- aov(Percent.uninsured ~ major_teaching,data = teaching_profile)
+summary(profile_major_teaching.aov)
+
+# Duncan test, p-value of .012
+stat.test <- PostHocTest(profile_major_teaching.aov, method = "duncan")$major_teaching %>%
+  as.data.frame()%>%
+  rownames_to_column("group") %>%
+  separate(group,"-", into = c("group1","group2")) %>%
+  mutate(pval = round(pval,3),
+         p = case_when(pval <= .01~ "**",
+                       pval <= .05 ~ "*",
+                       TRUE ~ "NS"))%>%
+  select(group1, group2, pval, p)
+
+box1 <- teaching_profile%>%
+  ggplot(aes(x=major_teaching,y=Percent.uninsured))+geom_boxplot(aes(fill=major_teaching),width=0.6)+
+  stat_compare_means(method = "anova",size=6,label.y.npc=0.96)+ 
+  stat_pvalue_manual(stat.test, label = "p",y.position = 1, step.increase = 0.2,size = 6,bracket.nudge.y = 8)+
+  labs(x="Majority Teaching Posture",y="Percent of uninsured population")+
+  team_theme+theme(legend.position = "hidden")+scale_fill_manual(values=col_theme)
+
+```
+
+
+### B
+
+```{r}
+# one-way ANOVA
+senior_major_teaching.aov <- aov(Percent.Population.65..yrs~ major_teaching,data = teaching_profile)
+
+summary(senior_major_teaching.aov)
+
+# Duncan test: p-value of .012
+stat.test <- PostHocTest(senior_major_teaching.aov, method = "duncan")$major_teaching %>%
+  as.data.frame()%>%
+  rownames_to_column("group") %>%
+  separate(group,"-", into = c("group1","group2")) %>%
+  mutate(pval = round(pval,3),
+         p = case_when(pval <= .01~ "**",
+                       pval <= .05 ~ "*",
+                       TRUE ~ "NS"))%>%
+  select(group1, group2, pval, p)
+# boxplot
+box2 <- teaching_profile%>%
+  ggplot(aes(x=major_teaching,y=Percent.Population.65..yrs))+
+  geom_boxplot(aes(fill=major_teaching),width=0.6)+
+  stat_compare_means(method = "anova",size=6,label.y.npc=1)+ 
+  stat_pvalue_manual(stat.test, label = "p",y.position = 21, step.increase = 0.2,size = 6,bracket.nudge.y = 2)+
+  labs(x="Major Teaching  Posture",y="Percent of 65+yrs population",fill="Majority Teaching Posture")+team_theme+theme(legend.position = "hidden")+scale_fill_manual(values=col_theme)
+
+```
+
+
+### All
+
+```{r}
+pic61 <- arrangeGrob(box1+
+                       theme(
+                         plot.margin=unit(c(1,1,1,1.5),"cm")), 
+                     top = textGrob("A.", x = unit(0, "npc")
+                                    , y = unit(1, "npc"), just=c("left","top"),
+                                    gp=gpar(fontface="bold",col="black", fontsize=22, 
+                                            fontfamily="Times Roman")))
+
+pic62 <- arrangeGrob(box2+
+                       theme(
+                         plot.margin=unit(c(1,1,1,1.5),"cm")), 
+                     top = textGrob("B.", x = unit(0, "npc")
+                                    , y = unit(1, "npc"), just=c("left","top"),
+                                    gp=gpar(fontface="bold",col="black", fontsize=22, 
+                                            fontfamily="Times Roman")))
+
+
+
+fig6 <- grid.arrange(pic61,pic62,ncol=2)
+
+ggsave("Figure6.png",plot=fig6,width=14,height=6)
+```
+
+
+## Fig 7
+
+### A
+```{r}
+# Pop density vs RURAL-Urban status
+boxfacet <- ohio_profile%>%
+  left_join(wide_teaching_enroll[,c("county","major_teaching")],
+            by = c("County" = "county"))%>%
+  drop_na(major_teaching)%>%
+  ggplot(aes(y=NCHS.Urban.Rural.Status,x=log(Population.density),
+             fill=major_teaching))+
+  facet_grid(~major_teaching)+
+  geom_boxplot()+
+  labs(fill="Majority teaching posture",
+       size="Averaged \n%6hr+ Away Home",
+       #title="Distribution of Log Population Density \nby Rural-urban Status",
+       x="Log Population Density", y= "Rural-urban Status")+
+  team_theme+
+  scale_fill_manual(values=col_theme)+
+  theme(legend.position = "hidden")
+```
+
+
+
+### B
+```{r}
+violinfacet <- ohio_profile%>%
+  filter(NCHS.Urban.Rural.Status=="Micropolitan")%>%
+ left_join(B0B1%>%select(COUNTY,major_teaching),by=c("County"="COUNTY"))%>%
+  ggplot(aes(x=major_teaching))+
+  geom_dotplot(aes(y=log(Population.density),fill=major_teaching),
+               binaxis='y', stackdir='center')+
+  team_theme+guides(fill=FALSE)+
+  labs(y="Log Population Density",x="Majority Teaching Posture")+
+       #title="Log of population density vs teaching posture\nfor Micropolitan Counties")+
+  scale_fill_manual(values=col_theme)
+
+```
+
+
+
+### All
+
+```{r}
+pic71 <- arrangeGrob(boxfacet+
+                       theme(
+                         plot.margin=unit(c(1,0,1,1.5),"cm")), 
+                     top = textGrob("A.", x = unit(0, "npc")
+                                    , y = unit(1, "npc"), just=c("left","top"),
+                                    gp=gpar(fontface="bold",col="black", fontsize=30, 
+                                            fontfamily="Times Roman")))
+
+pic72 <- arrangeGrob(violinfacet+
+                       theme(
+                         plot.margin=unit(c(1,1,1,1.5),"cm")), 
+                     top = textGrob("B.", x = unit(0, "npc")
+                                    , y = unit(1, "npc"), just=c("left","top"),
+                                    gp=gpar(fontface="bold",col="black", fontsize=30, 
+                                            fontfamily="Times Roman")))
+
+
+
+fig7 <- grid.arrange(pic71,pic72,ncol=2)
+
+ggsave("Figure7.png",plot=fig7,width=17,height=6)
+```
+
+
+## Supple4
+
+```{r}
+date.intercept=as.Date("2020-11-24")
+
+date_mobility$major_teaching <- factor(date_mobility$major_teaching,levels = c("On Premises","Hybrid","Online Only"))
+
+date_mobility$shiftedDate <- date_mobility$DATE + 28
+
+# FULL TIME WORK, 6 hours +
+date_mobility%>%
+  ggplot(aes(x=shiftedDate,y=full_work_prop))+
+  geom_rect(data=date_mobility[1,],
+            aes(xmin=as.Date("2020/08/26"), xmax=as.Date("2020/12/12"),
+                ymin=-Inf,ymax=Inf),
+            color = NA,alpha=0.2, show.legend = F, fill = "orange") + 
+  geom_line(aes(color = major_teaching),size = 1, alpha = .8)+
+  geom_vline(xintercept = date.intercept, linetype = "dashed") + 
+  annotate("text",x = date.intercept,y = 0.08,
+           label = date.intercept,
+           hjust = 1.1,size=5) + 
+  theme_bw() + 
+  labs(x = "Date", y = "% Full-time Workers/Students",subtitle = "Yellow area represents fall semester (09/18/20 - 12/15/20)",
+       color = "Majority Teaching Posture",title = "Average %Cell Phones Away Home for 6hrs+",caption = "Averaged over 7 days and shifted 1 Week forward") + ylim(0.02,0.10)+
+  theme(legend.position = "right")+team_theme+scale_color_manual(values=col_theme)
+
+
+
+ggsave("Supp6.png",width = 10,height = 6)
+```
+
+
+```{r}
+# Map of population size
+map1 <- cases%>%
+  distinct(COUNTY,POPULATION)%>%
+  left_join(ohio_map,by=c('COUNTY'='county'))%>%
+  mutate(population = POPULATION/1000)%>%
+  ggplot() + 
+  geom_polygon(aes(x = long, y = lat, group = group, fill = population), color = "gray") + 
+  coord_fixed(1.3) + theme_map() +
+  scale_fill_distiller(palette = "OrRd",direction = 1)+
+  labs(fill='Population/1000')+map_theme+
+  theme(legend.position = "right")
+
+# Map of student enrollments
+map2 <- teachingmethod_enroll%>%
+  distinct(county,county_enroll)%>%
+  left_join(ohio_map,by=c('county'))%>%
+  mutate(county_enroll = county_enroll/1000)%>%
+  ggplot() + 
+  geom_polygon(aes(x = long, y = lat, group = group, fill = county_enroll), color = "gray") + 
+  coord_fixed(1.3) + theme_map() +
+  scale_fill_distiller(palette = "OrRd",direction = 1)+
+  labs(fill='Student Enrollment/1000')+map_theme+
+  theme(legend.position = "right")
+```
+
+### All
+
+```{r}
+pic81 <- arrangeGrob(map1+
+                       theme(
+                         plot.margin=unit(c(1,0,1,0),"cm")), 
+                     top = textGrob("A.", x = unit(0, "npc")
+                                    , y = unit(1, "npc"), just=c("left","top"),
+                                    gp=gpar(fontface="bold",col="black", fontsize=30, 
+                                            fontfamily="Times Roman")))
+
+pic82 <- arrangeGrob(map2+
+                       theme(
+                         plot.margin=unit(c(1,0,1,0),"cm")), 
+                     top = textGrob("B.", x = unit(0, "npc")
+                                    , y = unit(1, "npc"), just=c("left","top"),
+                                    gp=gpar(fontface="bold",col="black", fontsize=30, 
+                                            fontfamily="Times Roman")))
+
+
+
+fig8 <- grid.arrange(pic81,pic82,ncol=2)
+
+ggsave("Supple3.png",plot=fig8,width=15,height=5)
+```
+
+
+```{r}
+saves <- B0B1%>%
+  select(COUNTY,max_B=max_B1,major_teaching,NCHS.Urban.Rural.Status)%>%
+  na.omit(major_teaching)
+write.csv(saves,file="MaxB.csv")
+```
+
+
+```{r}
+max_date <- cases_slope%>%
+  filter(DATE >= as.Date("2020-08-18") & DATE<=as.Date("2020-12-15"))%>%
+  group_by(COUNTY)%>%
+  filter(new.slope==max(new.slope))%>%
+  left_join(death_teaching%>%
+  select(-DATE,-POPULATION,-CUMDEATHS,-NEWDEATHS)%>%
+  distinct(),by="COUNTY")
+  
+  
+  
+
+ggplot(max_date,aes(x=DATE))+geom_histogram()+team_theme+labs(y="Frequency",x="Date of Maximum Growth Coefficents")
+
+
+ggplot(max_date%>%na.omit(major_teaching),aes(x=DATE,fill=major_teaching))+
+  geom_histogram()+facet_grid(~major_teaching)+
+  scale_fill_manual(values=col_theme)+
+  team_theme+labs(y="Frequency",x="Date of Maximum Growth Coefficents",fill="Majority Teaching Posture")+theme(legend.position = "hidden")
+
+
+ggplot(max_date%>%filter(major_teaching%in%c("Online Only","On Premises")),aes(x=DATE,fill=major_teaching))+
+  geom_histogram()+facet_grid(~major_teaching)+
+  scale_fill_manual(values=col_theme)+
+  team_theme+labs(y="Frequency",x="Date of Maximum Growth Coefficents",fill="Majority Teaching Posture")+theme(legend.position = "hidden")
+
+ggsave("date.png",width = 10,height = 5)
+```
+
+
+
+

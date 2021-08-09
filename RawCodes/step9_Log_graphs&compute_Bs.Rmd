@@ -1,0 +1,159 @@
+---
+title: "log graphs for each county"
+author: "Cheyenne Ehman"
+date: "4/7/2021"
+output: pdf_document
+---
+
+```{r, message = FALSE, warning = FALSE}
+library(readxl)
+library(tidyverse)
+library(ggformula)
+# read in OHIO_CASES_DATA
+cases <- read_excel("COVID_CASES_OH_CNTY_20210223_pop.xlsx")
+cases$DATE <- as.Date(cases$DATE, "%m/%d/%Y") # convert dates
+cases <- cases%>%
+  filter( (COUNTY != 'UNASSIGNED') & (COUNTY !='OUT OF OH'))%>% # remove UNASSIGNED and OUT OF OH data
+  mutate(FIPS = str_sub(UID,start = 4,end = 8),
+         NEWDEATHS = ifelse(is.na(NEWDEATHS),0,NEWDEATHS))%>%
+  select(COUNTY,FIPS,DATE,CNTY_LAT,CNTY_LONG,POPULATION,CUMCONFIRMED,CUMDEATHS,NEWDEATHS,NEWCONFIRMED) %>%
+  arrange(DATE)
+```
+
+### Fix negative values in NEW DEATHS
+
+```{r}
+cases[cases$NEWDEATHS<0,]
+#test case
+newdeaths <- cases[cases$COUNTY=='MORROW',]$NEWDEATHS
+distri_neg <- function(newdeaths){
+  for (i in 1:length(newdeaths)) {
+    if(newdeaths[i] < 0){
+      if(i == 1){
+        stop("problem")
+      }
+      j = i-1
+      while (newdeaths[i]<0 && j>=1) {
+        if(newdeaths[j]>0){
+          newdeaths[j] = newdeaths[j] - 1
+          newdeaths[i] = newdeaths[i] + 1
+        }
+        j = j - 1
+      }
+    }
+    if(newdeaths[i]<0){print("Still negative, need to double check")}
+    }
+  return(newdeaths)
+}
+# test out
+#distri_neg(newdeaths)
+## apply to each county
+cases <- cases%>%
+  group_by(COUNTY)%>%
+  mutate(rev_NEWDEATHS = distri_neg(NEWDEATHS))
+# double check
+cases[cases$rev_NEWDEATHS<0,]
+# two counties have negative new deaths at the beginning
+```
+
+
+# Fit Splines to Log( New Deaths + 1 )
+
+```{r, message = FALSE, warning = FALSE}
+log_deaths_county_df <- cases %>%
+  group_by(COUNTY) %>%
+  mutate(log_tot_deaths = log(CUMDEATHS + 1),
+         log_new_deaths = log(rev_NEWDEATHS + 1),
+         tot.smoothed.spline = smooth.spline(DATE,log_tot_deaths, df = 398/28)$y,
+         new.smoothed.spline = smooth.spline(DATE,log_new_deaths, df = 398/28)$y,
+         tot.slope = predict(smooth.spline(DATE,log_tot_deaths, df = 398/28),deriv = 1)$y,
+         new.slope = predict(smooth.spline(DATE,log_new_deaths, df = 398/28),deriv = 1)$y)
+#Want to order the counties by most Populous
+log_deaths_county_df$COUNTY <- factor(log_deaths_county_df$COUNTY,
+                                      levels = levels(fct_reorder(log_deaths_county_df$COUNTY,                            log_deaths_county_df$POPULATION,max,.desc = TRUE)))
+```
+
+
+```{r,include = FALSE}
+# This is a test chunk to see if it works on one county
+frank <- log_deaths_county_df %>%
+  filter(COUNTY == "FRANKLIN") 
+
+a <- ggplot(frank, aes(x = DATE, y = log_tot_deaths)) + 
+    geom_point(size = 2)+ 
+    geom_line(aes(x = DATE,y = tot.smoothed.spline), color = "red",size = 1)+ 
+    theme_bw() + 
+    labs(x = "Date", y = "Log( Cumulative Deaths + 1 )")
+b <- ggplot(frank, aes(x = DATE, y = tot.slope)) + 
+    geom_point()+ 
+    geom_line()+ 
+    theme_bw() + 
+    labs(x = "Date", y = "Derivative", title = "Slopes of Log( Cumulative Deaths + 1 )")
+c <- ggplot(frank, aes(x = DATE, y = log_new_deaths)) + 
+    geom_point(size = 2)+ 
+    geom_line(aes(x = DATE,y = new.smoothed.spline), color = "red",size = 1)+ 
+    theme_bw() + 
+    labs(x = "Date", y = "Log( New Deaths + 1 )")
+d <- ggplot(frank, aes(x = DATE, y = new.slope)) + 
+    geom_point()+ 
+    geom_line()+ 
+    theme_bw() + 
+    labs(x = "Date", y = "Derivative", title = "Slopes of Log( New Deaths + 1 )")
+gridExtra::grid.arrange(a,b,c,d)
+```
+
+
+# Cumulative Deaths
+
+```{r echo=FALSE, fig.height=14, fig.width=12, results='asis'}
+library(ggforce)
+for(i in 1:10){
+  p <- ggplot(log_deaths_county_df, aes(x = DATE, y = log_tot_deaths)) + 
+      geom_point(size = 2)+ 
+      geom_line(aes(x = DATE,y = tot.smoothed.spline), color = "red",size = 1)+ 
+      facet_wrap_paginate(~COUNTY, ncol = 3, nrow = 3, page = i)+ 
+      theme_bw() + 
+      labs(x = "Date", y = "Log( Cumulative Deaths + 1 )")+
+      theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=20,face="bold"),
+        strip.text.x = element_text(size = 16))
+  print(p)
+  cat("\n\n\\newpage\n")
+}
+```
+
+# New Deaths
+
+```{r echo=FALSE, fig.height=14, fig.width=12, message=FALSE, warning=FALSE, results='asis'}
+for(i in 1:10){
+  p <- ggplot(log_deaths_county_df, aes(x = DATE, y = log_new_deaths)) +
+      geom_point(size = 2) + 
+      geom_line(aes(x = DATE,y = new.smoothed.spline), color = "red",size = 1)+
+      facet_wrap_paginate(~COUNTY, ncol = 3, nrow = 3, page = i)+
+      theme_bw() +
+      labs(x = "Date", y = "Log( New Deaths + 1 )")+
+      theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=20,face="bold"),
+        strip.text.x = element_text(size = 16))
+  print(p)
+  cat("\n\n\\newpage\n")
+}
+```
+
+
+# Slopes of New Deaths
+
+```{r echo=FALSE, fig.height=14, fig.width=12, message=FALSE, warning=FALSE, results='asis'}
+for(i in 1:10){
+  p <- ggplot(log_deaths_county_df, aes(x = DATE, y = new.slope)) +
+      geom_line(size = 2, color = "red") +
+      facet_wrap_paginate(~COUNTY, ncol = 3, nrow = 3, page = i)+
+      theme_bw() +
+      labs(x = "Date", y = "Slopes of Log( New Deaths + 1 )")+
+      theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=20,face="bold"),
+        strip.text.x = element_text(size = 16))
+  print(p)
+  cat("\n\n\\newpage\n")
+}
+```
